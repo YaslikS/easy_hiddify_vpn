@@ -41,5 +41,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
 
 
-    api(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+    api(files("libs/hiddify-core.aar"))
 }
