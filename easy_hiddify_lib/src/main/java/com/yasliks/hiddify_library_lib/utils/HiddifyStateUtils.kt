@@ -8,10 +8,11 @@ import androidx.core.content.ContextCompat
 import com.hiddify.core.libbox.Notification
 import com.hiddify.core.libbox.OutboundGroup
 import com.hiddify.core.libbox.StatusMessage
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class HiddifyState(private val context: Context) {
+class HiddifyStateUtils(context: Context) {
 
     private val _connected = MutableStateFlow(false)
     val connected = _connected.asStateFlow()
@@ -25,23 +26,27 @@ class HiddifyState(private val context: Context) {
     private val _groups = MutableStateFlow<List<OutboundGroup>>(emptyList())
     val groups = _groups.asStateFlow()
 
-    companion object {
-        const val ACTION_VPN_STATE = "com.yasliks.hiddify.STATE_UPDATE"
-        const val EXTRA_IS_CONNECTED = "extra_connected"
-    }
 
     init {
-        val filter = IntentFilter(ACTION_VPN_STATE)
+        val filter = IntentFilter(HiddifyPrefs.ACTION_VPN_STATE)
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, intent: Intent?) {
-                if (intent?.action == ACTION_VPN_STATE) {
-                    val isConnected = intent.getBooleanExtra(EXTRA_IS_CONNECTED, false)
+                if (intent?.action == HiddifyPrefs.ACTION_VPN_STATE) {
+                    val isConnected = intent.getBooleanExtra(
+                        HiddifyPrefs.EXTRA_IS_CONNECTED,
+                        false,
+                    )
                     _connected.value = isConnected
                     if (!isConnected) resetLocal()
                 }
             }
         }
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            /* context = */ context,
+            /* receiver = */ receiver,
+            /* filter = */ filter,
+            /* flags = */ ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
     }
 
     internal fun updateNotification(value: Notification?) {

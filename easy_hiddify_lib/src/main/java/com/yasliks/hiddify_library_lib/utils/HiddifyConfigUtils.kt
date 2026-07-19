@@ -1,10 +1,13 @@
 package com.yasliks.hiddify_library_lib.utils
 
+import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
-import com.yasliks.hiddify_library_lib.prefs.Prefs.SHADOWSOCKS_START_CONFIG
-import com.yasliks.hiddify_library_lib.prefs.Prefs.VLESS_START_CONFIG
+import com.yasliks.easy_hiddify_lib.R
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs.SHADOWSOCKS_START_CONFIG
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs.VLESS_START_CONFIG
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -13,7 +16,7 @@ import org.json.JSONObject
  *
  * Parses configs `vless://` and `ss://`
  */
-class HiddifyConfigUtils {
+class HiddifyConfigUtils(private val context: Context) {
 
     /**
      * Parses configs
@@ -31,10 +34,10 @@ class HiddifyConfigUtils {
             return when (uri.scheme) {
                 VLESS_START_CONFIG -> generateVless(uri)
                 SHADOWSOCKS_START_CONFIG -> generateShadowsocks(uri)
-                else -> throw Exception("Unsupported protocol: ${uri.scheme}")
+                else -> throw Exception(context.getString(R.string.unsupported_protocol, uri.scheme))
             }
         } catch (e: Exception) {
-            return JSONObject().put("error", e.message).toString()
+            return JSONObject().put(context.getString(R.string.error), e.message).toString()
         }
     }
 
@@ -85,7 +88,7 @@ class HiddifyConfigUtils {
         val proxy = JSONObject().apply {
             put("type", VLESS_START_CONFIG)
             put("tag", "proxy")
-            put("server", host)
+            put(HiddifyPrefs.SERVER, host)
             put("server_port", port)
             put("uuid", uuid)
             if (flow.isNotEmpty()) put("flow", flow)
@@ -142,11 +145,11 @@ class HiddifyConfigUtils {
         val decodedUserInfo = try {
             String(Base64.decode(uri.userInfo ?: "", Base64.DEFAULT))
         } catch (e: Exception) {
-            throw Exception("Invalid SS Base64")
+            throw Exception(context.getString(R.string.invalid_ss_base))
         }
 
         val parts = decodedUserInfo.split(":", limit = 2)
-        if (parts.size < 2) throw Exception("Invalid SS userinfo format")
+        if (parts.size < 2) throw Exception(context.getString(R.string.invalid_ss_userinfo_format))
 
         val method = parts[0]
         val password = parts[1]
@@ -184,7 +187,7 @@ class HiddifyConfigUtils {
         val proxy = JSONObject().apply {
             put("type", "shadowsocks")
             put("tag", "proxy")
-            put("server", host)
+            put(HiddifyPrefs.SERVER, host)
             put("server_port", port)
             put("method", method)
             put("password", password)

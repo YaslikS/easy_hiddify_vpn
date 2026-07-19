@@ -61,7 +61,11 @@ class MainActivity : ComponentActivity() {
             pendingConfig = config
             vpnPermissionLauncher.launch(intent)
         } else {
-            hiddify.startVpn(config, "Hiddify Test Server")
+            hiddify.startVpn(
+                configStr = config,
+                serverName = "Name",
+//                icon = R.drawable.outline_vpn_lock_2_24,
+            )
         }
     }
 
@@ -72,7 +76,11 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             pendingConfig?.let {
-                hiddify.startVpn(it, "Hiddify Test Server")
+                hiddify.startVpn(
+                    configStr = it,
+                    serverName = "Name",
+//                    icon = R.drawable.outline_vpn_lock_2_24,
+                )
             }
         }
     }
@@ -88,7 +96,7 @@ class MainActivity : ComponentActivity() {
         val logs by hiddify.logger.logs.collectAsStateWithLifecycle()
 
         Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
-            Text("Hiddify SDK Test", style = MaterialTheme.typography.headlineMedium)
+            Text("Hiddify Lib Test App", style = MaterialTheme.typography.headlineMedium)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -138,6 +146,26 @@ class MainActivity : ComponentActivity() {
                     enabled = isConnected,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) { Text("STOP", fontSize = 10.sp) }
+
+                if (BuildConfig.DEBUG) {
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            configText = BuildConfig.vless_serv
+                        },
+                        enabled = !isConnected,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                    ) { Text("VLESS", fontSize = 10.sp) }
+
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            configText = BuildConfig.ss_serv
+                        },
+                        enabled = !isConnected,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                    ) { Text("SS", fontSize = 10.sp) }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

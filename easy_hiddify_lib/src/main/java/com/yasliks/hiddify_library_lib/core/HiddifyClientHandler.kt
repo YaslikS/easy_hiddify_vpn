@@ -1,10 +1,15 @@
 package com.yasliks.hiddify_library_lib.core
 
+import android.content.Context
 import android.util.Log
 import com.hiddify.core.libbox.*
+import com.yasliks.easy_hiddify_lib.R
 import com.yasliks.hiddify_library_lib.EasyHiddify
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 
-class HiddifyClientHandler : CommandClientHandler {
+class HiddifyClientHandler(
+    private val context: Context,
+) : CommandClientHandler {
 
     private val sdk get() = EasyHiddify.instance
 
@@ -17,7 +22,13 @@ class HiddifyClientHandler : CommandClientHandler {
     }
 
     override fun writeLogs(messageList: LogIterator) {
-        Log.d("Hiddify", "Received logs from core, count: ${messageList.len()}")
+        Log.d(
+            /* tag = */ HiddifyPrefs.HIDDIFY,
+            /* msg = */ context.getString(
+                /* resId = */ R.string.received_logs_from_core,
+                /* ...formatArgs = */ messageList.len(),
+            ),
+        )
         sdk.logger.append(messageList)
     }
 

@@ -2,13 +2,15 @@ package com.yasliks.hiddify_library_lib
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.DrawableRes
 import com.hiddify.core.libbox.Libbox
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 import com.yasliks.hiddify_library_lib.service.HiddifyVpnService
 import com.yasliks.hiddify_library_lib.utils.HiddifyConfigUtils
 import com.yasliks.hiddify_library_lib.utils.HiddifyLoggerUtils
 import com.yasliks.hiddify_library_lib.utils.HiddifyNotificationUtils
-import com.yasliks.hiddify_library_lib.utils.HiddifyState
-import com.yasliks.hiddify_library_lib.utils.HiddifyUtils
+import com.yasliks.hiddify_library_lib.utils.HiddifyStateUtils
+import com.yasliks.hiddify_library_lib.utils.HiddifyCoreUtils
 import go.Seq
 
 class EasyHiddify private constructor(
@@ -17,10 +19,10 @@ class EasyHiddify private constructor(
 
     private val appContext = context.applicationContext
 
-    val state = HiddifyState(appContext)
-    val logger = HiddifyLoggerUtils()
-    val generator = HiddifyConfigUtils()
-    val utils = HiddifyUtils(appContext)
+    val state = HiddifyStateUtils(appContext)
+    val logger = HiddifyLoggerUtils(appContext)
+    val generator = HiddifyConfigUtils(appContext)
+    val utils = HiddifyCoreUtils(appContext)
     val notifications = HiddifyNotificationUtils(appContext)
 
     companion object {
@@ -65,14 +67,16 @@ class EasyHiddify private constructor(
      */
     fun startVpn(
         configStr: String,
-        serverName: String = "Server",
+        serverName: String = HiddifyPrefs.SERVER,
+        @DrawableRes icon: Int = 0,
     ) {
         val intent = Intent(
             /* packageContext = */ appContext,
             /* cls = */ HiddifyVpnService::class.java,
         ).apply {
-            putExtra("config_content", configStr)
-            putExtra("name_server", serverName)
+            putExtra(HiddifyPrefs.CONFIG_CONTENT, configStr)
+            putExtra(HiddifyPrefs.NAME_SERVER, serverName)
+            putExtra(HiddifyPrefs.ICON_PUSH, icon)
         }
         appContext.startService(intent)
     }
@@ -85,7 +89,7 @@ class EasyHiddify private constructor(
             /* packageContext = */ appContext,
             /* cls = */ HiddifyVpnService::class.java,
         ).apply {
-            action = HiddifyVpnService.ACTION_STOP
+            action = HiddifyPrefs.ACTION_STOP_VPN
         }
         appContext.startService(intent)
     }

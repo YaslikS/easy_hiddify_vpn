@@ -1,14 +1,14 @@
 package com.yasliks.hiddify_library_lib.utils
 
+import android.content.Context
 import android.util.Log
 import com.hiddify.core.libbox.LogEntry
 import com.hiddify.core.libbox.LogIterator
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class HiddifyLoggerUtils {
-    private val TAG = "HiddifySDK"
-    private val MAX_LOGS = 500
+class HiddifyLoggerUtils(private val context: Context) {
     private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
     val logs = _logs.asStateFlow()
 
@@ -23,18 +23,17 @@ class HiddifyLoggerUtils {
     fun append(entry: LogEntry) {
         val currentList = _logs.value.toMutableList()
         currentList.add(entry)
-        if (currentList.size > MAX_LOGS) {
+        if (currentList.size > HiddifyPrefs.MAX_LOGS) {
             currentList.removeAt(0)
         }
         _logs.value = currentList
 
-        // Дублируем в системный Logcat для удобства разработки
         when (entry.level) {
-            0 -> Log.v(TAG, entry.message)
-            1 -> Log.d(TAG, entry.message)
-            2 -> Log.i(TAG, entry.message)
-            3 -> Log.w(TAG, entry.message)
-            else -> Log.e(TAG, entry.message)
+            0 -> Log.v(HiddifyPrefs.HIDDIFY_LIB, entry.message)
+            1 -> Log.d(HiddifyPrefs.HIDDIFY_LIB, entry.message)
+            2 -> Log.i(HiddifyPrefs.HIDDIFY_LIB, entry.message)
+            3 -> Log.w(HiddifyPrefs.HIDDIFY_LIB, entry.message)
+            else -> Log.e(HiddifyPrefs.HIDDIFY_LIB, entry.message)
         }
     }
 

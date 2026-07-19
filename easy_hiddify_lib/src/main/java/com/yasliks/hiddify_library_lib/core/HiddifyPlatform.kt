@@ -10,8 +10,9 @@ import android.os.Process
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.hiddify.core.libbox.*
+import com.yasliks.easy_hiddify_lib.R
 import com.yasliks.hiddify_library_lib.EasyHiddify
-import com.yasliks.hiddify_library_lib.utils.HiddifyNotificationUtils
+import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
@@ -22,18 +23,24 @@ class HiddifyPlatform(
     private val sdk get() = EasyHiddify.instance
 
     override fun openTun(options: TunOptions): Int {
-        Log.d("Hiddify", "---> openTun called by Core!")
+        Log.d(
+            /* tag = */ HiddifyPrefs.HIDDIFY,
+            /* msg = */ service.getString(R.string.opentun_called_core),
+        )
         val builder = service.Builder()
 
         try {
-            // We exclude the application itself (and all its processes, including :vpn) from the tunnel
+            // Exclude the application itself (and all its processes, including :vpn) from the tunnel
             builder.addDisallowedApplication(service.packageName)
         } catch (e: Exception) {
-            Log.e("Hiddify", "Failed to disallow self: ${e.message}")
+            Log.e(
+                /* tag = */ HiddifyPrefs.HIDDIFY,
+                /* msg = */ service.getString(R.string.failed_to_disallow, e.message ?: ""),
+            )
         }
 
-        builder.setSession("hiddify")
-        builder.setMtu(if (options.mtu > 0) options.mtu else 1500)
+        builder.setSession(HiddifyPrefs.HIDDIFY_SMALL)
+        builder.setMtu(if (options.mtu > 0) options.mtu else HiddifyPrefs.BASE_MTU)
 
         // Setting up IP addresses
         val inet4 = options.inet4Address
@@ -53,7 +60,7 @@ class HiddifyPlatform(
         if (dns != null && dns.value.isNotEmpty()) {
             builder.addDnsServer(dns.value)
         } else {
-            builder.addDnsServer("8.8.8.8")
+            builder.addDnsServer(HiddifyPrefs.BASE_DNS_SERVER)
         }
 
         // Routing
@@ -65,7 +72,7 @@ class HiddifyPlatform(
                         builder.addRoute(inet4RouteAddress.next().toIpPrefix())
                     }
                 } else {
-                    builder.addRoute("0.0.0.0", 0)
+                    builder.addRoute(HiddifyPrefs.BASE_ROUTE, 0)
                 }
 
                 val inet6RouteAddress = options.inet6RouteAddress
@@ -77,8 +84,8 @@ class HiddifyPlatform(
                     builder.addRoute("::", 0)
                 }
             } else {
-                builder.addRoute("0.0.0.0", 0)
-                builder.addRoute("::", 0)
+                builder.addRoute(HiddifyPrefs.BASE_ROUTE, 0)
+                builder.addRoute(HiddifyPrefs.ZERO_ROUTE, 0)
             }
         }
 
@@ -103,7 +110,9 @@ class HiddifyPlatform(
             builder.setMetered(false)
         }
 
-        val pfd = builder.establish() ?: error("android: vpn prepare required")
+        val pfd = builder.establish() ?: error(
+            service.getString(R.string.vpn_prepare_required),
+        )
         return pfd.fd
     }
 
@@ -124,13 +133,13 @@ class HiddifyPlatform(
             /* name = */ Context.NOTIFICATION_SERVICE,
         ) as NotificationManager
         manager.notify(
-            /* id = */ HiddifyNotificationUtils.NOTIFICATION_ID,
+            /* id = */ HiddifyPrefs.NOTIFICATION_ID,
             /* notification = */ systemNotification,
         )
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    fun RoutePrefix.toIpPrefix() = IpPrefix(
+    private fun RoutePrefix.toIpPrefix() = IpPrefix(
         /* address = */ InetAddress.getByName(address()),
         /* prefixLength = */ prefix(),
     )
