@@ -14,6 +14,8 @@ object HiddifyPrefs {
     const val CONFIG_CONTENT = "config_content"
     const val NAME_SERVER = "name_server"
     const val ICON_PUSH = "icon_push"
+    const val APPS_LIST = "apps_list"
+    const val IS_ENABLED_APPS = "is_enabled_apps"
 
 
     const val VPN = "VPN"

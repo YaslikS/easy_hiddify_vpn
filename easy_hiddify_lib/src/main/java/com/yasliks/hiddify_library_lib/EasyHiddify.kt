@@ -22,7 +22,7 @@ class EasyHiddify private constructor(
     val state = HiddifyStateUtils(appContext)
     val logger = HiddifyLoggerUtils(appContext)
     val generator = HiddifyConfigUtils(appContext)
-    val utils = HiddifyCoreUtils(appContext)
+    val coreUtils = HiddifyCoreUtils(appContext)
     val notifications = HiddifyNotificationUtils(appContext)
 
     companion object {
@@ -62,13 +62,18 @@ class EasyHiddify private constructor(
     /**
      * Launching a VPN via Intent
      *
-     * @param configStr server configuration string
-     * @param serverName the name of the server to display in the notification
+     * @param configStr connection configuration string
+     * @param serverName the name of the notification server
+     * @param icon notification icon
+     * @param appsList список приложения для туннелирования
+     * @param isEnabledApps включить список приложения для туннелирования
      */
     fun startVpn(
         configStr: String,
         serverName: String = HiddifyPrefs.SERVER,
         @DrawableRes icon: Int = 0,
+        appsList: List<String> = emptyList(),
+        isEnabledApps: Boolean = false,
     ) {
         val intent = Intent(
             /* packageContext = */ appContext,
@@ -77,6 +82,8 @@ class EasyHiddify private constructor(
             putExtra(HiddifyPrefs.CONFIG_CONTENT, configStr)
             putExtra(HiddifyPrefs.NAME_SERVER, serverName)
             putExtra(HiddifyPrefs.ICON_PUSH, icon)
+            putExtra(HiddifyPrefs.APPS_LIST, appsList.toTypedArray())
+            putExtra(HiddifyPrefs.IS_ENABLED_APPS, isEnabledApps)
         }
         appContext.startService(intent)
     }

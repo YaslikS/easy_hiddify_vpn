@@ -2,6 +2,7 @@ package com.yasliks.hiddify_library_lib.core
 
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.IpPrefix
 import android.net.VpnService
@@ -18,6 +19,8 @@ import java.net.InetSocketAddress
 
 class HiddifyPlatform(
     private val service: VpnService,
+    private val isEnabledApps: Boolean = false,
+    private val appsList: List<String> = emptyList(),
 ) : PlatformInterface {
 
     private val sdk get() = EasyHiddify.instance
@@ -101,10 +104,18 @@ class HiddifyPlatform(
         val exclude = options.excludePackage
         while (exclude.hasNext()) {
             try {
-                builder.addDisallowedApplication(/* packageName = */ exclude.next())
+                builder.addDisallowedApplication(
+                    /* packageName = */ exclude.next(),
+                )
             } catch (_: Exception) {
             }
         }
+
+        // TODO: in_progress: распространять на выбранные приложения
+        builder.enabledApps(
+            isEnabledApps = isEnabledApps,
+            listApps = appsList,
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
@@ -114,6 +125,61 @@ class HiddifyPlatform(
             service.getString(R.string.vpn_prepare_required),
         )
         return pfd.fd
+    }
+
+    /**
+     * Extends VPN operation to a list of tunneling applications
+     *
+     * @param listApps список приложения для туннелирования
+     * @param isEnabledApps включить список приложения для туннелирования
+     */
+    private fun VpnService.Builder.enabledApps(
+        isEnabledApps: Boolean = true,
+        listApps: List<String>,
+    ): VpnService.Builder {
+        if (isEnabledApps || listApps.isEmpty()) {
+            return this
+        }
+
+        try {
+            val addedApps = mutableListOf<String>()
+
+            for (app in listApps) {
+                if (app.isBlank() || app in addedApps) continue
+
+                if (appIsExists(app)) {
+                    try {
+                        this.addAllowedApplication(app)
+                        addedApps.add(app)
+                    } catch (e: Exception) {
+                        // Пакет может быть удален в процессе или не подходить
+                        // The package may be deleted in the process or may not be suitable.
+
+                    }
+                }
+            }
+        } catch (e: Exception) {
+
+        }
+
+        return this
+    }
+
+    /**
+     * Проверяет установлено ли приложение на устройстве
+     *
+     * @param packageName Название пакета
+     * @return true - если приложение установлено, false - в остальных случаях
+     */
+    private fun appIsExists(packageName: String): Boolean {
+        try {
+            val ctx = service
+            ctx.packageManager.getPackageInfo(packageName, 0)
+        } catch (e: PackageManager.NameNotFoundException) {
+            // The app isn't installed.
+            return false
+        }
+        return true
     }
 
     /**

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yasliks.hiddify_library_lib.EasyHiddify
+import com.yasliks.hiddify_library_lib.extension.formatTraffic
 
 class MainActivity : ComponentActivity() {
 
@@ -64,7 +65,6 @@ class MainActivity : ComponentActivity() {
             hiddify.startVpn(
                 configStr = config,
                 serverName = "Name",
-//                icon = R.drawable.outline_vpn_lock_2_24,
             )
         }
     }
@@ -79,7 +79,6 @@ class MainActivity : ComponentActivity() {
                 hiddify.startVpn(
                     configStr = it,
                     serverName = "Name",
-//                    icon = R.drawable.outline_vpn_lock_2_24,
                 )
             }
         }
@@ -112,7 +111,7 @@ class MainActivity : ComponentActivity() {
 
             status?.let {
                 Text(
-                    "Down: ${formatTraffic(it.downlinkTotal)} | Up: ${formatTraffic(it.uplinkTotal)}",
+                    "Down: ${it.downlinkTotal.formatTraffic()} | Up: ${it.uplinkTotal.formatTraffic()}",
                     fontSize = 12.sp
                 )
             }
@@ -193,14 +192,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    /**
-     * Auxiliary function for formatting bytes in a readable form
-     */
-    private fun formatTraffic(bytes: Long): String {
-        val kb = bytes / 1024.0
-        val mb = kb / 1024.0
-        return if (mb > 1) "%.2f MB".format(mb) else "%.2f KB".format(kb)
     }
 }

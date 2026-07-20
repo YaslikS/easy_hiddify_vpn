@@ -51,12 +51,21 @@ class HiddifyVpnService : VpnService() {
             /* name = */ HiddifyPrefs.ICON_PUSH,
             /* defaultValue = */ 0,
         ) ?: 0
+        val appsList = intent?.getStringArrayListExtra(
+            /* name = */ HiddifyPrefs.APPS_LIST,
+        )
+        val isEnabledApps = intent?.getBooleanExtra(
+            /* name = */ HiddifyPrefs.IS_ENABLED_APPS,
+            /* defaultValue = */ false,
+        ) ?: false
 
         if (configContent.isNotEmpty()) {
             startVpn(
                 configContent = configContent,
                 serverName = serverName,
                 icon = icon,
+                appsList = appsList?.toList() ?: emptyList(),
+                isEnabledApps = isEnabledApps,
             )
         }
         return START_STICKY
@@ -67,11 +76,16 @@ class HiddifyVpnService : VpnService() {
      *
      * @param configContent connection configuration string
      * @param serverName the name of the notification server
+     * @param icon notification icon
+     * @param appsList список приложения для туннелирования
+     * @param isEnabledApps включить список приложения для туннелирования
      */
     private fun startVpn(
         configContent: String,
         serverName: String,
         @DrawableRes icon: Int,
+        appsList: List<String>,
+        isEnabledApps: Boolean,
     ) {
         val notification = sdk.notifications.createNotification(
             serverName = serverName,
@@ -84,17 +98,21 @@ class HiddifyVpnService : VpnService() {
                 val hiddifyConfig = sdk.generator.generateConfig(configContent)
 
                 Libbox.setup(SetupOptions().apply {
-                    basePath = sdk.utils.getWorkingDir()
-                    workingPath = sdk.utils.getWorkingDir()
-                    tempPath = sdk.utils.getTempDir()
+                    basePath = sdk.coreUtils.getWorkingDir()
+                    workingPath = sdk.coreUtils.getWorkingDir()
+                    tempPath = sdk.coreUtils.getTempDir()
                     commandServerListenPort = HiddifyPrefs.COMMAND_SERVER_LISTEN_PORT
-                    commandServerSecret = sdk.utils.generateSecret()
+                    commandServerSecret = sdk.coreUtils.generateSecret()
                     fixAndroidStack = true
                 })
 
                 commandServer = Libbox.newCommandServer(
                     /* handler = */ HiddifyCommandHandler(this@HiddifyVpnService),
-                    /* platformInterface = */ HiddifyPlatform(this@HiddifyVpnService),
+                    /* platformInterface = */ HiddifyPlatform(
+                        service = this@HiddifyVpnService,
+                        appsList = appsList,
+                        isEnabledApps = isEnabledApps,
+                    ),
                 )
                 commandServer?.start()
                 commandServer?.startOrReloadService(
