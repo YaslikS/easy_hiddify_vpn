@@ -3,6 +3,7 @@ package com.yasliks.hiddify_library_lib.service
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.VpnService
+import android.util.Log
 import androidx.annotation.DrawableRes
 import com.hiddify.core.libbox.CommandClient
 import com.hiddify.core.libbox.CommandClientOptions
@@ -51,14 +52,17 @@ class HiddifyVpnService : VpnService() {
             /* name = */ HiddifyPrefs.ICON_PUSH,
             /* defaultValue = */ 0,
         ) ?: 0
-        val appsList = intent?.getStringArrayListExtra(
+        val appsList = intent?.getStringArrayExtra(
             /* name = */ HiddifyPrefs.APPS_LIST,
         )
         val isEnabledApps = intent?.getBooleanExtra(
             /* name = */ HiddifyPrefs.IS_ENABLED_APPS,
             /* defaultValue = */ false,
         ) ?: false
-
+        Log.d(
+            /* tag = */ HiddifyPrefs.HIDDIFY,
+            /* msg = */ "onStartCommand -> isEnabledApps == $isEnabledApps, appsList == ${appsList?.toList()}",
+        )
         if (configContent.isNotEmpty()) {
             startVpn(
                 configContent = configContent,

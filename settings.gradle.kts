@@ -28,3 +28,4 @@ dependencyResolutionManagement {
 rootProject.name = "easy_hiddify_vpn"
 include(":app")
 include(":easy_hiddify_lib")
+include(":database")

@@ -31,15 +31,16 @@ class HiddifyPlatform(
             /* msg = */ service.getString(R.string.opentun_called_core),
         )
         val builder = service.Builder()
-
-        try {
-            // Exclude the application itself (and all its processes, including :vpn) from the tunnel
-            builder.addDisallowedApplication(service.packageName)
-        } catch (e: Exception) {
-            Log.e(
-                /* tag = */ HiddifyPrefs.HIDDIFY,
-                /* msg = */ service.getString(R.string.failed_to_disallow, e.message ?: ""),
-            )
+        if (!isEnabledApps || appsList.isEmpty()) {
+            try {
+                // Exclude the application itself (and all its processes, including :vpn) from the tunnel
+                builder.addDisallowedApplication(service.packageName)
+            } catch (e: Exception) {
+                Log.e(
+                    /* tag = */ HiddifyPrefs.HIDDIFY,
+                    /* msg = */ service.getString(R.string.failed_to_disallow, e.message ?: ""),
+                )
+            }
         }
 
         builder.setSession(HiddifyPrefs.HIDDIFY_SMALL)
@@ -90,32 +91,16 @@ class HiddifyPlatform(
                 builder.addRoute(HiddifyPrefs.BASE_ROUTE, 0)
                 builder.addRoute(HiddifyPrefs.ZERO_ROUTE, 0)
             }
-        }
 
-        // Packages (Include/Exclude)
-        val include = options.includePackage
-        while (include.hasNext()) {
-            try {
-                builder.addAllowedApplication(include.next())
-            } catch (_: Exception) {
-            }
+            Log.d(
+                /* tag = */ HiddifyPrefs.HIDDIFY,
+                /* msg = */ "isEnabledApps = $isEnabledApps, appsList == $appsList",
+            )
+            builder.enabledApps(
+                isEnabledApps = isEnabledApps,
+                listApps = appsList,
+            )
         }
-
-        val exclude = options.excludePackage
-        while (exclude.hasNext()) {
-            try {
-                builder.addDisallowedApplication(
-                    /* packageName = */ exclude.next(),
-                )
-            } catch (_: Exception) {
-            }
-        }
-
-        // TODO: in_progress: распространять на выбранные приложения
-        builder.enabledApps(
-            isEnabledApps = isEnabledApps,
-            listApps = appsList,
-        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
@@ -137,18 +122,25 @@ class HiddifyPlatform(
         isEnabledApps: Boolean = true,
         listApps: List<String>,
     ): VpnService.Builder {
-        if (isEnabledApps || listApps.isEmpty()) {
+        if (!isEnabledApps || listApps.isEmpty()) {
             return this
         }
-
+        Log.d(
+            /* tag = */ HiddifyPrefs.HIDDIFY,
+            /* msg = */ "isEnabledApps -> start",
+        )
         try {
-            val addedApps = mutableListOf<String>()
-
+            val addedApps = HashSet<String>()
             for (app in listApps) {
                 if (app.isBlank() || app in addedApps) continue
+                if (app == service.packageName) continue
 
                 if (appIsExists(app)) {
                     try {
+                        Log.d(
+                            /* tag = */ HiddifyPrefs.HIDDIFY,
+                            /* msg = */ "enabledApps -> app = $app",
+                        )
                         this.addAllowedApplication(app)
                         addedApps.add(app)
                     } catch (e: Exception) {
