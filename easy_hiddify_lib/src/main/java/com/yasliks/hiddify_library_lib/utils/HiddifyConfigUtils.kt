@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
 import com.yasliks.easy_hiddify_lib.R
+import com.yasliks.hiddify_library_lib.EasyHiddify
 import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
 import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs.SHADOWSOCKS_START_CONFIG
 import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs.VLESS_START_CONFIG
@@ -18,6 +19,10 @@ import org.json.JSONObject
  */
 class HiddifyConfigUtils(private val context: Context) {
 
+
+    private val sdk get() = EasyHiddify.instance
+
+
     /**
      * Parses configs
      *
@@ -27,17 +32,29 @@ class HiddifyConfigUtils(private val context: Context) {
      */
     fun generateConfig(configStr: String): String {
         val trimmed = configStr.trim()
-        if (trimmed.startsWith("{")) return trimmed
+        sdk.logger.append(2, "[CONFIG] Generating config from string input...")
+
+        if (trimmed.startsWith("{")) {
+            sdk.logger.append(2, "[CONFIG] Raw JSON config detected")
+            return trimmed
+        }
 
         try {
             val uri = trimmed.toUri()
+            sdk.logger.append(2, "[CONFIG] Protocol scheme detected: ${uri.scheme}")
             return when (uri.scheme) {
                 VLESS_START_CONFIG -> generateVless(uri)
                 SHADOWSOCKS_START_CONFIG -> generateShadowsocks(uri)
-                else -> throw Exception(context.getString(R.string.unsupported_protocol, uri.scheme))
+                else -> {
+                    val err = context.getString(R.string.unsupported_protocol, uri.scheme)
+                    sdk.logger.append(4, "[CONFIG ERROR] $err")
+                    throw Exception(err)
+                }
             }
         } catch (e: Exception) {
-            return JSONObject().put(context.getString(R.string.error), e.message).toString()
+            val errMessage = e.message ?: "Unknown config parsing error"
+            sdk.logger.append(4, "[CONFIG ERROR] $errMessage")
+            return JSONObject().put(context.getString(R.string.error), errMessage).toString()
         }
     }
 
@@ -53,6 +70,8 @@ class HiddifyConfigUtils(private val context: Context) {
         // Parameters for Reality
         val pbk = uri.getQueryParameter("pbk") ?: ""
         val sid = uri.getQueryParameter("sid") ?: ""
+
+        sdk.logger.append(2, "[CONFIG] Parsed VLESS -> Host: $host:$port | Security: $security | SNI: $sni | FP: $fp | Flow: $flow")
 
         val root = JSONObject()
 
@@ -145,14 +164,22 @@ class HiddifyConfigUtils(private val context: Context) {
         val decodedUserInfo = try {
             String(Base64.decode(uri.userInfo ?: "", Base64.DEFAULT))
         } catch (e: Exception) {
-            throw Exception(context.getString(R.string.invalid_ss_base))
+            val err = context.getString(R.string.invalid_ss_base)
+            sdk.logger.append(4, "[CONFIG ERROR] $err")
+            throw Exception(err)
         }
 
         val parts = decodedUserInfo.split(":", limit = 2)
-        if (parts.size < 2) throw Exception(context.getString(R.string.invalid_ss_userinfo_format))
+        if (parts.size < 2) {
+            val err = context.getString(R.string.invalid_ss_userinfo_format)
+            sdk.logger.append(4, "[CONFIG ERROR] $err")
+            throw Exception(err)
+        }
 
         val method = parts[0]
         val password = parts[1]
+
+        sdk.logger.append(2, "[CONFIG] Parsed SS -> Host: $host:$port | Method: $method")
 
         val root = JSONObject()
 

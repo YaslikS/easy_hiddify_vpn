@@ -38,6 +38,7 @@ class HiddifyVpnService : VpnService() {
         startId: Int,
     ): Int {
         if (intent?.action == HiddifyPrefs.ACTION_STOP_VPN) {
+            sdk.logger.append(2, "[SERVICE] Received STOP command action")
             stopVpnInternal()
             return START_NOT_STICKY
         }
@@ -59,10 +60,8 @@ class HiddifyVpnService : VpnService() {
             /* name = */ HiddifyPrefs.IS_ENABLED_APPS,
             /* defaultValue = */ false,
         ) ?: false
-        Log.d(
-            /* tag = */ HiddifyPrefs.HIDDIFY,
-            /* msg = */ "onStartCommand -> isEnabledApps == $isEnabledApps, appsList == ${appsList?.toList()}",
-        )
+
+        sdk.logger.append(2, "[SERVICE] Service started with config length: ${configContent.length}")
         if (configContent.isNotEmpty()) {
             startVpn(
                 configContent = configContent,
@@ -71,6 +70,9 @@ class HiddifyVpnService : VpnService() {
                 appsList = appsList?.toList() ?: emptyList(),
                 isEnabledApps = isEnabledApps,
             )
+        } else {
+            sdk.logger.append(4, "[SERVICE ERROR] Received empty configuration!")
+            stopVpnInternal()
         }
         return START_STICKY
     }
@@ -99,6 +101,7 @@ class HiddifyVpnService : VpnService() {
 
         serviceScope.launch {
             try {
+                sdk.logger.append(2, "[SERVICE] Starting VPN process...")
                 val hiddifyConfig = sdk.generator.generateConfig(configContent)
 
                 Libbox.setup(SetupOptions().apply {
@@ -109,6 +112,7 @@ class HiddifyVpnService : VpnService() {
                     commandServerSecret = sdk.coreUtils.generateSecret()
                     fixAndroidStack = true
                 })
+                sdk.logger.append(2, "[SERVICE] Libbox setup completed")
 
                 commandServer = Libbox.newCommandServer(
                     /* handler = */ HiddifyCommandHandler(this@HiddifyVpnService),
@@ -119,14 +123,19 @@ class HiddifyVpnService : VpnService() {
                     ),
                 )
                 commandServer?.start()
+                sdk.logger.append(2, "[SERVICE] CommandServer started")
+
                 commandServer?.startOrReloadService(
                     /* configContent = */ hiddifyConfig,
                     /* options = */ OverrideOptions(),
                 )
+                sdk.logger.append(2, "[SERVICE] Core service loaded successfully")
 
                 notifyStateChange(true)
                 setupCommandClient()
+                sdk.logger.append(2, "[SERVICE] VPN started successfully!")
             } catch (e: Exception) {
+                sdk.logger.append(4, "[SERVICE ERROR] Failed to start VPN: ${e.message}")
                 stopVpnInternal()
             }
         }
@@ -137,6 +146,7 @@ class HiddifyVpnService : VpnService() {
      */
     private fun setupCommandClient() {
         try {
+            sdk.logger.append(2, "[SERVICE] Connecting CommandClient...")
             val options = CommandClientOptions()
                 .apply {
                     statusInterval = HiddifyPrefs.STATUS_INTERVAL
@@ -146,7 +156,9 @@ class HiddifyVpnService : VpnService() {
                 /* options = */ options,
             )
             commandClient?.connect()
+            sdk.logger.append(2, "[SERVICE] CommandClient connected")
         } catch (e: Exception) {
+            sdk.logger.append(4, "[SERVICE ERROR] CommandClient failed: ${e.message}")
         }
     }
 
@@ -167,6 +179,7 @@ class HiddifyVpnService : VpnService() {
      * Closes the VPN connection
      */
     private fun stopVpnInternal() {
+        sdk.logger.append(2, "[SERVICE] Stopping VPN service...")
         notifyStateChange(false)
         stopForeground(STOP_FOREGROUND_REMOVE)
         Thread {
@@ -174,9 +187,12 @@ class HiddifyVpnService : VpnService() {
                 commandClient?.disconnect()
                 commandServer?.closeService()
                 commandServer?.close()
+                sdk.logger.append(2, "[SERVICE] Core services closed cleanly")
             } catch (e: Exception) {
+                sdk.logger.append(4, "[SERVICE ERROR] Exception while stopping VPN: ${e.message}")
             } finally {
                 stopSelf()
+                sdk.logger.append(2, "[SERVICE] VPN stopped. Exiting process...")
                 Thread.sleep(HiddifyPrefs.DELAY_BEFORE_EXIT)
                 exitProcess(0)
             }

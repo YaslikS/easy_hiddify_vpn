@@ -26,20 +26,19 @@ class HiddifyPlatform(
     private val sdk get() = EasyHiddify.instance
 
     override fun openTun(options: TunOptions): Int {
-        Log.d(
-            /* tag = */ HiddifyPrefs.HIDDIFY,
-            /* msg = */ service.getString(R.string.opentun_called_core),
-        )
+        val mtu = if (options.mtu > 0) options.mtu else HiddifyPrefs.BASE_MTU
+        sdk.logger.append(2, "[PLATFORM] openTun called from core. MTU: $mtu, AutoRoute: ${options.autoRoute}")
+
         val builder = service.Builder()
         if (!isEnabledApps || appsList.isEmpty()) {
             try {
                 // Exclude the application itself (and all its processes, including :vpn) from the tunnel
                 builder.addDisallowedApplication(service.packageName)
+                sdk.logger.append(2, "[PLATFORM] Disallowed self package from VPN: ${service.packageName}")
             } catch (e: Exception) {
-                Log.e(
-                    /* tag = */ HiddifyPrefs.HIDDIFY,
-                    /* msg = */ service.getString(R.string.failed_to_disallow, e.message ?: ""),
-                )
+                val err = service.getString(R.string.failed_to_disallow, e.message ?: "")
+                Log.e(HiddifyPrefs.HIDDIFY, err)
+                sdk.logger.append(3, "[PLATFORM WARNING] $err")
             }
         }
 
@@ -51,20 +50,24 @@ class HiddifyPlatform(
         while (inet4.hasNext()) {
             val addr = inet4.next()
             builder.addAddress(addr.address(), addr.prefix())
+            sdk.logger.append(2, "[PLATFORM] IPv4 added: ${addr.address()}/${addr.prefix()}")
         }
 
         val inet6 = options.inet6Address
         while (inet6.hasNext()) {
             val addr = inet6.next()
             builder.addAddress(addr.address(), addr.prefix())
+            sdk.logger.append(2, "[PLATFORM] IPv6 added: ${addr.address()}/${addr.prefix()}")
         }
 
         // DNS Configuration
         val dns = options.dnsServerAddress
         if (dns != null && dns.value.isNotEmpty()) {
             builder.addDnsServer(dns.value)
+            sdk.logger.append(2, "[PLATFORM] DNS Server set: ${dns.value}")
         } else {
             builder.addDnsServer(HiddifyPrefs.BASE_DNS_SERVER)
+            sdk.logger.append(2, "[PLATFORM] Default DNS Server set: ${HiddifyPrefs.BASE_DNS_SERVER}")
         }
 
         // Routing
@@ -92,10 +95,7 @@ class HiddifyPlatform(
                 builder.addRoute(HiddifyPrefs.ZERO_ROUTE, 0)
             }
 
-            Log.d(
-                /* tag = */ HiddifyPrefs.HIDDIFY,
-                /* msg = */ "isEnabledApps = $isEnabledApps, appsList == $appsList",
-            )
+            sdk.logger.append(2, "[PLATFORM] isEnabledApps = $isEnabledApps, appsList == $appsList")
             builder.enabledApps(
                 isEnabledApps = isEnabledApps,
                 listApps = appsList,
@@ -106,29 +106,32 @@ class HiddifyPlatform(
             builder.setMetered(false)
         }
 
-        val pfd = builder.establish() ?: error(
-            service.getString(R.string.vpn_prepare_required),
-        )
+        val pfd = builder.establish() ?: run {
+            val err = service.getString(R.string.vpn_prepare_required)
+            sdk.logger.append(4, "[PLATFORM ERROR] $err")
+            error(err)
+        }
+
+        sdk.logger.append(2, "[PLATFORM] VPN Tunnel established successfully. FD: ${pfd.fd}")
         return pfd.fd
     }
 
     /**
      * Extends VPN operation to a list of tunneling applications
      *
-     * @param listApps список приложения для туннелирования
-     * @param isEnabledApps включить список приложения для туннелирования
+     * @param listApps list of tunneling applications
+     * @param isEnabledApps enable the list of tunneling applications
      */
     private fun VpnService.Builder.enabledApps(
         isEnabledApps: Boolean = true,
         listApps: List<String>,
     ): VpnService.Builder {
         if (!isEnabledApps || listApps.isEmpty()) {
+            sdk.logger.append(2, "[PLATFORM] Split tunneling disabled or empty app list")
             return this
         }
-        Log.d(
-            /* tag = */ HiddifyPrefs.HIDDIFY,
-            /* msg = */ "isEnabledApps -> start",
-        )
+        sdk.logger.append(2, "[PLATFORM] Configuring split tunneling for ${listApps.size} apps...")
+
         try {
             val addedApps = HashSet<String>()
             for (app in listApps) {
@@ -137,21 +140,19 @@ class HiddifyPlatform(
 
                 if (appIsExists(app)) {
                     try {
-                        Log.d(
-                            /* tag = */ HiddifyPrefs.HIDDIFY,
-                            /* msg = */ "enabledApps -> app = $app",
-                        )
                         this.addAllowedApplication(app)
                         addedApps.add(app)
                     } catch (e: Exception) {
-                        // Пакет может быть удален в процессе или не подходить
                         // The package may be deleted in the process or may not be suitable.
-
+                        sdk.logger.append(3, "[PLATFORM WARNING] Failed to add app $app: ${e.message}")
                     }
+                } else {
+                    sdk.logger.append(3, "[PLATFORM WARNING] Package not installed: $app")
                 }
             }
+            sdk.logger.append(2, "[PLATFORM] Total allowed apps added: ${addedApps.size}")
         } catch (e: Exception) {
-
+            sdk.logger.append(4, "[PLATFORM ERROR] Exception in enabledApps: ${e.message}")
         }
 
         return this

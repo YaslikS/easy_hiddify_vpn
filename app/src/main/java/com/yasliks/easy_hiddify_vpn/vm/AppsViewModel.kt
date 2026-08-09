@@ -148,27 +148,33 @@ class AppsViewModel @Inject constructor(
         drawable: Drawable
     ): String? {
         return try {
-            // Конвертируем Drawable в Bitmap
             val bitmap = createBitmap(
                 width = drawable.intrinsicWidth.coerceAtLeast(1),
                 height = drawable.intrinsicHeight.coerceAtLeast(1),
             )
             val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.setBounds(
+                /* left = */ 0,
+                /* top = */ 0,
+                /* right = */ canvas.width,
+                /* bottom = */ canvas.height,
+            )
             drawable.draw(canvas)
 
-            // Создаем файл во внутреннем хранилище (папка "app_icons")
             val directory = File(context.filesDir, "app_icons")
             if (!directory.exists()) directory.mkdirs()
 
             val file = File(directory, "$packageName.png")
 
-            // Записываем Bitmap в файл
             FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                bitmap.compress(
+                    /* format = */ Bitmap.CompressFormat.PNG,
+                    /* quality = */ 100,
+                    /* stream = */ out,
+                )
             }
 
-            file.absolutePath // Возвращаем путь к файлу для сохранения в БД
+            file.absolutePath
         } catch (e: Exception) {
             e.printStackTrace()
             null

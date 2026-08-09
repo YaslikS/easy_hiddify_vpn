@@ -45,6 +45,7 @@ class EasyHiddify private constructor(
 
                     val instance = EasyHiddify(ctx)
                     INSTANCE = instance
+                    instance.logger.append(2, "[SDK] EasyHiddify initialized")
                     instance
                 }
             }
@@ -75,6 +76,8 @@ class EasyHiddify private constructor(
         appsList: List<String> = emptyList(),
         isEnabledApps: Boolean = false,
     ) {
+        logger.append(2, "[SDK] Requesting VPN start. Apps count: ${appsList.size}, split tunneling enabled: $isEnabledApps")
+
         val intent = Intent(
             /* packageContext = */ appContext,
             /* cls = */ HiddifyVpnService::class.java,
@@ -92,6 +95,7 @@ class EasyHiddify private constructor(
      * Stopping VPN via Intent
      */
     fun stopVpn() {
+        logger.append(2, "[SDK] Requesting VPN stop")
         val intent = Intent(
             /* packageContext = */ appContext,
             /* cls = */ HiddifyVpnService::class.java,

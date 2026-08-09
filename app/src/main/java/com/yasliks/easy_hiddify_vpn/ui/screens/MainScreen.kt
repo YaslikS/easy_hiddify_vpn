@@ -2,9 +2,13 @@ package com.yasliks.easy_hiddify_vpn.ui.screens
 
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -23,18 +27,26 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -42,7 +54,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yasliks.easy_hiddify_vpn.BuildConfig
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
@@ -57,6 +68,7 @@ fun MainScreen(
     val context = LocalContext.current
 
     var pendingConfig by remember { mutableStateOf<String?>(null) }
+    val listState = rememberLazyListState()
 
     val isConnected by hiddify.state.connected.collectAsState()
     val status by hiddify.state.status.collectAsState()
@@ -123,6 +135,11 @@ fun MainScreen(
         }
     }
 
+    LaunchedEffect(logs.size) {
+        if (logs.isNotEmpty()) {
+            listState.scrollToItem(logs.size - 1)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -214,25 +231,63 @@ fun MainScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Logs:", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Logs (${logs.size}):",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            OutlinedButton(
+                onClick = {
+                    if (logs.isNotEmpty()) {
+                        val fullLogs = logs.joinToString("\n") { it.message }
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("Hiddify Logs", fullLogs)
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Log list is empty", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share Logs",
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Share Logs", fontSize = 11.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Surface(
             modifier = Modifier.fillMaxSize().weight(1f),
             color = Color.Black,
             shape = MaterialTheme.shapes.small
         ) {
-            LazyColumn(contentPadding = PaddingValues(8.dp)) {
-                items(logs) { entry ->
-                    Text(
-                        text = entry.message,
-                        color = when (entry.level) {
-                            4 -> Color.Red
-                            3 -> Color.Yellow
-                            else -> Color.LightGray
-                        },
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
+            SelectionContainer {
+                LazyColumn(contentPadding = PaddingValues(8.dp)) {
+                    items(
+                        items = logs,
+                        key = { it.id },
+                    ) { entry ->
+                        Text(
+                            text = entry.message,
+                            color = when (entry.level) {
+                                4 -> Color.Red
+                                3 -> Color.Yellow
+                                else -> Color.LightGray
+                            },
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
                 }
             }
         }
