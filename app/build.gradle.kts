@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.yasliks.easy_hiddify_vpn"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.yasliks.easy_hiddify_vpn"

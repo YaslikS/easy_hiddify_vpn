@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.yasliks.easy_hiddify_lib"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
