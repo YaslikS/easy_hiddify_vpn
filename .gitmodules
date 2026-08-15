@@ -1,0 +1,3 @@
+[submodule "easy_hiddify_lib"]
+	path = easy_hiddify_lib
+	url = https://github.com/YaslikS/easy_hiddify_lib.git
