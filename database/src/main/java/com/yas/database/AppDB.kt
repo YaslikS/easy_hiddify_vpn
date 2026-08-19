@@ -24,9 +24,6 @@ internal abstract class AppDB : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDB? = null
 
-        /**
-         * Получает базу данных
-         */
         @Synchronized
         fun getDatabase(context: Context): AppDB {
             return INSTANCE ?: synchronized(lock) {
