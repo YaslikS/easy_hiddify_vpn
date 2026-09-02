@@ -2,4 +2,7 @@
     <string name="app_name">easy_hiddify_vpn</string>
     <string name="main">Main</string>
     <string name="apps">Applications</string>
+
+    <string name="speed">Speed %s</string>
+    <string name="total">Total %s</string>
 </resources>

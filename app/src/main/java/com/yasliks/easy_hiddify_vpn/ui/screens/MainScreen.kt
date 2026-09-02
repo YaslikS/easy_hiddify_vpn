@@ -49,14 +49,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.yasliks.easy_hiddify_vpn.BuildConfig
+import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
-import com.yasliks.hiddify_library_lib.extension.formatTraffic
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
@@ -69,6 +70,7 @@ fun MainScreen(
     var pendingConfig by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
+    val traffic by EasyHiddify.instance.state.trafficStats.collectAsState()
     val isConnected by hiddify.state.connected.collectAsState()
     val status by hiddify.state.status.collectAsState()
     val logs by hiddify.logger.logs.collectAsState()
@@ -153,7 +155,7 @@ fun MainScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
@@ -164,10 +166,20 @@ fun MainScreen(
             Text(if (isConnected) "CONNECTED" else "DISCONNECTED")
         }
 
-        status?.let {
+        if (isConnected){
             Text(
-                "Down: ${it.downlinkTotal.formatTraffic()} | Up: ${it.uplinkTotal.formatTraffic()}",
+                text = stringResource(
+                    id = R.string.speed,
+                    "⬇️ ${traffic.getDownlinkSpeed()} || ⬆️ ${traffic.getUplinkSpeed()}"
+                ),
                 fontSize = 12.sp
+            )
+            Text(
+                text = stringResource(
+                    id = R.string.total,
+                    "⬇️ ${traffic.getDownlinkTotal()} || ⬆️ ${traffic.getUplinkTotal()}"
+                ),
+                fontSize = 12.sp,
             )
         }
 
@@ -178,7 +190,7 @@ fun MainScreen(
             onValueChange = {
                 appsViewModel.changeConfig(it)
             },
-            label = { Text("Config (VLESS/SS/JSON)") },
+            label = { Text("Config (VLESS/SS/TROJAN/JSON)") },
             modifier = Modifier.fillMaxWidth(),
             maxLines = 4
         )
