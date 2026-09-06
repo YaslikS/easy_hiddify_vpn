@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -42,4 +43,23 @@ dependencies {
     androidTestImplementation(libs.coroutine.test)
     androidTestImplementation(libs.coroutine.core)
     androidTestImplementation(libs.coroutine.android)
+
+    implementation(libs.androidx.datastore)
+    implementation(libs.protobuf.java)
+    implementation(libs.protobuf.java.util)
+    implementation(libs.androidx.datastore.core)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.30.2"
+    }
+
+    generateProtoTasks {
+        all().onEach { task ->
+            task.plugins {
+                maybeCreate("java")
+            }
+        }
+    }
 }

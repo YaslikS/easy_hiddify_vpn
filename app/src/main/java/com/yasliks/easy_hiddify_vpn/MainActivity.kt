@@ -15,7 +15,10 @@ import androidx.compose.ui.res.stringResource
 import com.yasliks.easy_hiddify_vpn.ui.components.BottomNavItems
 import com.yasliks.easy_hiddify_vpn.ui.screens.AppsScreen
 import com.yasliks.easy_hiddify_vpn.ui.screens.MainScreen
+import com.yasliks.easy_hiddify_vpn.ui.screens.SettingsScreen
+import com.yasliks.easy_hiddify_vpn.ui.theme.EasyHiddifyVpnTheme
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
+import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -26,13 +29,14 @@ class MainActivity : ComponentActivity() {
     private val hiddify get() = EasyHiddify.instance
 
     private val appsViewModel: AppsViewModel by viewModels()
+    private val serverViewModel: ServerViewModel by viewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
+            EasyHiddifyVpnTheme {
                 var currentPage by remember {
                     mutableStateOf(BottomNavItems.MainBottomItem.route)
                 }
@@ -40,6 +44,7 @@ class MainActivity : ComponentActivity() {
                 val bottomItems = listOf(
                     BottomNavItems.MainBottomItem,
                     BottomNavItems.ApplicationsBottomItem,
+                    BottomNavItems.SettingsBottomItem,
                 )
 
                 Scaffold(
@@ -77,12 +82,19 @@ class MainActivity : ComponentActivity() {
                                 MainScreen(
                                     appsViewModel = appsViewModel,
                                     hiddify = hiddify,
+                                    serverViewModel = serverViewModel,
                                 )
                             }
 
                             BottomNavItems.ApplicationsBottomItem.route -> {
                                 AppsScreen(
                                     appsViewModel = appsViewModel,
+                                    hiddify = hiddify,
+                                )
+                            }
+
+                            BottomNavItems.SettingsBottomItem.route -> {
+                                SettingsScreen(
                                     hiddify = hiddify,
                                 )
                             }

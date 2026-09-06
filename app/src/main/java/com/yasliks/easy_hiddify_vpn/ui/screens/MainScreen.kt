@@ -2,16 +2,15 @@ package com.yasliks.easy_hiddify_vpn.ui.screens
 
 import android.Manifest
 import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,17 +25,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,53 +39,85 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.yasliks.easy_hiddify_vpn.BuildConfig
+import com.yas.database.data.ServerDTO
 import com.yasliks.easy_hiddify_vpn.R
+import com.yasliks.easy_hiddify_vpn.ui.components.ServerItem
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
+import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun MainScreen(
     appsViewModel: AppsViewModel,
+    serverViewModel: ServerViewModel,
     hiddify: EasyHiddify,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
-    var pendingConfig by remember { mutableStateOf<String?>(null) }
-    val listState = rememberLazyListState()
+    var pendingConfig by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingServerName by rememberSaveable { mutableStateOf("Name") }
+    var pendingServerId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var activeServerId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    var isEditMode by remember { mutableStateOf(false) }
+    var showServerSheet by remember { mutableStateOf(false) }
+    var serverToEdit by remember { mutableStateOf<ServerDTO?>(null) }
 
     val traffic by EasyHiddify.instance.state.trafficStats.collectAsState()
     val isConnected by hiddify.state.connected.collectAsState()
-    val status by hiddify.state.status.collectAsState()
-    val logs by hiddify.logger.logs.collectAsState()
     val selectedApps by appsViewModel.selectedApps.collectAsState(
         initial = persistentListOf(),
     )
 
-    // Start VPN
+    val servers by serverViewModel.servers.collectAsState(initial = emptyList())
+    val lastServerId by serverViewModel.lastServerId.collectAsState(initial = 0)
+
+    val effectiveSelectedId = if (servers.any { it.id == lastServerId }) {
+        lastServerId
+    } else {
+        servers.firstOrNull()?.id ?: 0
+    }
+
+    LaunchedEffect(isConnected) {
+        if (!isConnected) {
+            activeServerId = null
+        } else if (activeServerId == null && effectiveSelectedId != 0) {
+            activeServerId = effectiveSelectedId
+        }
+    }
+
+    BackHandler(enabled = isEditMode) {
+        isEditMode = false
+    }
+
     val startHiddify = {
         pendingConfig?.let {
             hiddify.startVpn(
                 configStr = it,
-                serverName = "Name",
+                serverName = pendingServerName,
                 appsList = selectedApps,
                 isEnabledApps = true,
             )
+            activeServerId = pendingServerId
         }
     }
 
-    // Launcher VPN
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -99,7 +126,6 @@ fun MainScreen(
         }
     }
 
-    // Check VPN permission
     val checkVpnPermissionAndStart = {
         val intent = VpnService.prepare(context)
         if (intent != null) {
@@ -109,21 +135,21 @@ fun MainScreen(
         }
     }
 
-    // Check notification permission
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
         checkVpnPermissionAndStart()
     }
 
-    // Main entry point
-    val handleStartClick = { config: String ->
+    val handleStartClick = { config: String, serverName: String, serverId: Int? ->
         pendingConfig = config
+        pendingServerName = serverName
+        pendingServerId = serverId
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val hasPermission = ContextCompat.checkSelfPermission(
-                /* context = */ context,
-                /* permission = */ Manifest.permission.POST_NOTIFICATIONS,
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
 
             if (!hasPermission) {
@@ -136,173 +162,208 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(logs.size) {
-        if (logs.isNotEmpty()) {
-            listState.scrollToItem(logs.size - 1)
-        }
-    }
-
     Column(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxSize()
     ) {
-        Text(
-            text = "Hiddify Lib Test App",
-            style = MaterialTheme.typography.headlineMedium,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .background(if (isConnected) Color.Green else Color.Red)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isConnected) "CONNECTED" else "DISCONNECTED")
-        }
+                    .size(130.dp)
+                    .clip(CircleShape)
+                    .background(if (isConnected) Color(0xFFE53935) else Color(0xFF4CAF50))
+                    .clickable {
+                        if (isConnected) {
+                            hiddify.stopVpn()
+                            activeServerId = null
+                        } else {
+                            val targetServer = servers.find { it.id == effectiveSelectedId }
 
-        if (isConnected){
-            Text(
-                text = stringResource(
-                    id = R.string.speed,
-                    "⬇️ ${traffic.getDownlinkSpeed()} || ⬆️ ${traffic.getUplinkSpeed()}"
-                ),
-                fontSize = 12.sp
-            )
-            Text(
-                text = stringResource(
-                    id = R.string.total,
-                    "⬇️ ${traffic.getDownlinkTotal()} || ⬆️ ${traffic.getUplinkTotal()}"
-                ),
-                fontSize = 12.sp,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = appsViewModel.config,
-            onValueChange = {
-                appsViewModel.changeConfig(it)
-            },
-            label = { Text("Config (VLESS/SS/TROJAN/JSON)") },
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 4
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    handleStartClick(appsViewModel.config)
-                },
-                enabled = !isConnected,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) { Text("START", fontSize = 10.sp) }
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    hiddify.stopVpn()
-                },
-                enabled = isConnected,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) { Text("STOP", fontSize = 10.sp) }
-
-            if (BuildConfig.DEBUG) {
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        appsViewModel.changeConfig(BuildConfig.vless_serv)
+                            if (targetServer != null) {
+                                serverViewModel.setLastServerId(targetServer.id)
+                                handleStartClick(
+                                    targetServer.config,
+                                    targetServer.name,
+                                    targetServer.id
+                                )
+                            } else {
+                                Toast.makeText(
+                                    /* context = */ context,
+                                    /* text = */ context.getString(R.string.list_servers_empty),
+                                    /* duration = */ Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                     },
-                    enabled = !isConnected,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) { Text("VLESS", fontSize = 10.sp) }
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isConnected) "STOP" else "START",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+            }
 
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        appsViewModel.changeConfig(BuildConfig.ss_serv)
-                    },
-                    enabled = !isConnected,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) { Text("SS", fontSize = 10.sp) }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = if (isConnected) "CONNECTED" else "DISCONNECTED",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = if (isConnected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (isConnected) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(
+                        id = R.string.speed,
+                        "⬇️ ${traffic.getDownlinkSpeed()} || ⬆️ ${traffic.getUplinkSpeed()}"
+                    ),
+                    fontSize = 12.sp
+                )
+                Text(
+                    text = stringResource(
+                        id = R.string.total,
+                        "⬇️ ${traffic.getDownlinkTotal()} || ⬆️ ${traffic.getUplinkTotal()}"
+                    ),
+                    fontSize = 12.sp,
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Logs (${logs.size}):",
-                style = MaterialTheme.typography.titleMedium
+                text = if (isEditMode) stringResource(R.string.editing_servers) else stringResource(R.string.saved_ervers),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isEditMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
 
-            OutlinedButton(
-                onClick = {
-                    if (logs.isNotEmpty()) {
-                        val fullLogs = logs.joinToString("\n") { it.message }
-                        val clipboard =
-                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Hiddify Logs", fullLogs)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT)
-                            .show()
-                    } else {
-                        Toast.makeText(context, "Log list is empty", Toast.LENGTH_SHORT).show()
-                    }
+            if (isEditMode) {
+                Button(
+                    onClick = { isEditMode = false },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(stringResource(R.string.done))
                 }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share Logs",
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = "Share Logs", fontSize = 11.sp)
+            } else {
+                OutlinedButton(
+                    onClick = {
+                        serverToEdit = null
+                        showServerSheet = true
+                    },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.add))
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Surface(
-            modifier = Modifier.fillMaxSize().weight(1f),
-            color = Color.Black,
-            shape = MaterialTheme.shapes.small
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            SelectionContainer {
-                LazyColumn(contentPadding = PaddingValues(8.dp)) {
-                    items(
-                        items = logs,
-                        key = { it.id },
-                    ) { entry ->
-                        Text(
-                            text = entry.message,
-                            color = when (entry.level) {
-                                4 -> Color.Red
-                                3 -> Color.Yellow
-                                else -> Color.LightGray
-                            },
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace
-                        )
+            items(servers, key = { it.id }) { server ->
+                val isCurrentServerConnected = isConnected && (activeServerId == server.id)
+                val isSelected = server.id == effectiveSelectedId
+
+                ServerItem(
+                    server = server,
+                    isSelected = isSelected,
+                    isCurrentConnected = isCurrentServerConnected,
+                    isEditMode = isEditMode,
+                    onConnectClick = {
+                        serverViewModel.setLastServerId(server.id)
+                        handleStartClick(server.config, server.name, server.id)
+                    },
+                    onEditClick = {
+                        serverToEdit = server
+                        showServerSheet = true
+                    },
+                    onCopyClick = {
+                        clipboardManager.setText(AnnotatedString(server.config))
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.config_copied),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onDeleteClick = {
+                        if (isCurrentServerConnected) {
+                            hiddify.stopVpn()
+                            activeServerId = null
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.connection_broken),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        if (server.id == effectiveSelectedId) {
+                            val nextServerId = servers.firstOrNull { it.id != server.id }?.id ?: 0
+                            serverViewModel.setLastServerId(nextServerId)
+                        }
+
+                        serverViewModel.remove(server)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.server_deleted),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onLongClick = {
+                        if (!isEditMode) {
+                            isEditMode = true
+                        }
                     }
-                }
+                )
             }
         }
+    }
+
+    if (showServerSheet) {
+        ServerBottomSheet(
+            serverToEdit = serverToEdit,
+            onDismiss = {
+                showServerSheet = false
+                serverToEdit = null
+            },
+            onSave = { name, config ->
+                if (serverToEdit != null) {
+                    serverViewModel.update(
+                        serverToEdit!!.copy(name = name, config = config)
+                    )
+                } else {
+                    serverViewModel.insert(config = config, name = name)
+                }
+                showServerSheet = false
+                serverToEdit = null
+            }
+        )
     }
 }

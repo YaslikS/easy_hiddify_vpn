@@ -6,6 +6,7 @@ import com.yasliks.easy_hiddify_vpn.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material.icons.filled.Settings
 
 
 sealed class BottomNavItems(
@@ -30,5 +31,14 @@ sealed class BottomNavItems(
         route = "screenCart",
         stringId = R.string.apps,
         Icons.Default.Apps,
+    )
+
+    /**
+     * Settings.
+     */
+    data object SettingsBottomItem : BottomNavItems(
+        route = "screenSettings",
+        stringId = R.string.settings,
+        Icons.Default.Settings,
     )
 }

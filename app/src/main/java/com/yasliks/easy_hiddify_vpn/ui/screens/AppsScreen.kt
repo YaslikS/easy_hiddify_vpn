@@ -28,8 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import kotlinx.collections.immutable.persistentListOf
@@ -57,7 +59,7 @@ fun AppsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Tunneling",
+                text = stringResource(R.string.tunneling),
                 style = MaterialTheme.typography.headlineMedium,
             )
 

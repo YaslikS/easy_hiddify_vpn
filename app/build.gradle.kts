@@ -69,6 +69,10 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
+    implementation(libs.androidx.datastore)
+    implementation(libs.protobuf.java)
+    implementation(libs.protobuf.java.util)
+    implementation(libs.androidx.datastore.core)
 
     implementation(project(":database"))
     //external dependence

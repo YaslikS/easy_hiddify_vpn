@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option java_package = "com.yasliks.database.data";
+option java_multiple_files = true;
+
+message SettingsData {
+  int32 last_server_id = 1;
+}
