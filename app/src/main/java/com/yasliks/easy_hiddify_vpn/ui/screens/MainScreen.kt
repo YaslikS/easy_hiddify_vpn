@@ -81,6 +81,8 @@ fun MainScreen(
 
     val traffic by EasyHiddify.instance.state.trafficStats.collectAsState()
     val isConnected by hiddify.state.connected.collectAsState()
+    val serviceActiveServerId by hiddify.state.activeServerId.collectAsState()
+
     val selectedApps by appsViewModel.selectedApps.collectAsState(
         initial = persistentListOf(),
     )
@@ -94,11 +96,11 @@ fun MainScreen(
         servers.firstOrNull()?.id ?: 0
     }
 
-    LaunchedEffect(isConnected) {
-        if (!isConnected) {
-            activeServerId = null
-        } else if (activeServerId == null && effectiveSelectedId != 0) {
-            activeServerId = effectiveSelectedId
+    LaunchedEffect(isConnected, serviceActiveServerId) {
+        activeServerId = if (!isConnected) {
+            null
+        } else {
+            serviceActiveServerId ?: activeServerId ?: effectiveSelectedId
         }
     }
 
@@ -111,6 +113,7 @@ fun MainScreen(
             hiddify.startVpn(
                 configStr = it,
                 serverName = pendingServerName,
+                serverId = pendingServerId ?: 0,
                 appsList = selectedApps,
                 isEnabledApps = true,
             )
@@ -308,9 +311,9 @@ fun MainScreen(
                     onCopyClick = {
                         clipboardManager.setText(AnnotatedString(server.config))
                         Toast.makeText(
-                            context,
-                            context.getString(R.string.config_copied),
-                            Toast.LENGTH_SHORT
+                            /* context = */ context,
+                            /* text = */ context.getString(R.string.config_copied),
+                            /* duration = */ Toast.LENGTH_SHORT
                         ).show()
                     },
                     onDeleteClick = {
@@ -318,9 +321,9 @@ fun MainScreen(
                             hiddify.stopVpn()
                             activeServerId = null
                             Toast.makeText(
-                                context,
-                                context.getString(R.string.connection_broken),
-                                Toast.LENGTH_SHORT
+                                /* context = */ context,
+                                /* text = */ context.getString(R.string.connection_broken),
+                                /* duration = */ Toast.LENGTH_SHORT
                             ).show()
                         }
 
@@ -331,9 +334,9 @@ fun MainScreen(
 
                         serverViewModel.remove(server)
                         Toast.makeText(
-                            context,
-                            context.getString(R.string.server_deleted),
-                            Toast.LENGTH_SHORT
+                            /* context = */ context,
+                            /* text = */ context.getString(R.string.server_deleted),
+                            /* duration = */ Toast.LENGTH_SHORT
                         ).show()
                     },
                     onLongClick = {
