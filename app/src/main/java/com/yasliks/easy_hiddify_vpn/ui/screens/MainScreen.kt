@@ -56,6 +56,7 @@ import androidx.core.content.ContextCompat
 import com.yas.database.data.ServerDTO
 import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.ui.components.ServerItem
+import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
@@ -165,208 +166,213 @@ fun MainScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize()
-    ) {
+    ScreenWrapper(
+        showTopBar = false
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding)
+                .padding(16.dp)
+                .fillMaxSize()
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(130.dp)
-                    .clip(CircleShape)
-                    .background(if (isConnected) Color(0xFFE53935) else Color(0xFF4CAF50))
-                    .clickable {
-                        if (isConnected) {
-                            hiddify.stopVpn()
-                            activeServerId = null
-                        } else {
-                            val targetServer = servers.find { it.id == effectiveSelectedId }
-
-                            if (targetServer != null) {
-                                serverViewModel.setLastServerId(targetServer.id)
-                                handleStartClick(
-                                    targetServer.config,
-                                    targetServer.name,
-                                    targetServer.id
-                                )
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(130.dp)
+                        .clip(CircleShape)
+                        .background(if (isConnected) Color(0xFFE53935) else Color(0xFF4CAF50))
+                        .clickable {
+                            if (isConnected) {
+                                hiddify.stopVpn()
+                                activeServerId = null
                             } else {
-                                Toast.makeText(
-                                    /* context = */ context,
-                                    /* text = */ context.getString(R.string.list_servers_empty),
-                                    /* duration = */ Toast.LENGTH_SHORT
-                                ).show()
+                                val targetServer = servers.find { it.id == effectiveSelectedId }
+
+                                if (targetServer != null) {
+                                    serverViewModel.setLastServerId(targetServer.id)
+                                    handleStartClick(
+                                        targetServer.config,
+                                        targetServer.name,
+                                        targetServer.id
+                                    )
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.list_servers_empty),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
-                        }
-                    },
-                contentAlignment = Alignment.Center
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isConnected) "STOP" else "START",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isConnected) "CONNECTED" else "DISCONNECTED",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = if (isConnected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (isConnected) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(
+                            id = R.string.speed,
+                            "⬇️ ${traffic.getDownlinkSpeed()} || ⬆️ ${traffic.getUplinkSpeed()}"
+                        ),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = stringResource(
+                            id = R.string.total,
+                            "⬇️ ${traffic.getDownlinkTotal()} || ⬆️ ${traffic.getUplinkTotal()}"
+                        ),
+                        fontSize = 12.sp,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isConnected) "STOP" else "START",
-                    color = Color.White,
+                    text = if (isEditMode) stringResource(R.string.editing_servers) else stringResource(R.string.saved_ervers),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
+                    color = if (isEditMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = if (isConnected) "CONNECTED" else "DISCONNECTED",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = if (isConnected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (isConnected) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(
-                        id = R.string.speed,
-                        "⬇️ ${traffic.getDownlinkSpeed()} || ⬆️ ${traffic.getUplinkSpeed()}"
-                    ),
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = stringResource(
-                        id = R.string.total,
-                        "⬇️ ${traffic.getDownlinkTotal()} || ⬆️ ${traffic.getUplinkTotal()}"
-                    ),
-                    fontSize = 12.sp,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (isEditMode) stringResource(R.string.editing_servers) else stringResource(R.string.saved_ervers),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (isEditMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
-
-            if (isEditMode) {
-                Button(
-                    onClick = { isEditMode = false },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text(stringResource(R.string.done))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = {
-                        serverToEdit = null
-                        showServerSheet = true
-                    },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.add))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
-            items(servers, key = { it.id }) { server ->
-                val isCurrentServerConnected = isConnected && (activeServerId == server.id)
-                val isSelected = server.id == effectiveSelectedId
-
-                ServerItem(
-                    server = server,
-                    isSelected = isSelected,
-                    isCurrentConnected = isCurrentServerConnected,
-                    isEditMode = isEditMode,
-                    onConnectClick = {
-                        serverViewModel.setLastServerId(server.id)
-                        handleStartClick(server.config, server.name, server.id)
-                    },
-                    onEditClick = {
-                        serverToEdit = server
-                        showServerSheet = true
-                    },
-                    onCopyClick = {
-                        clipboardManager.setText(AnnotatedString(server.config))
-                        Toast.makeText(
-                            /* context = */ context,
-                            /* text = */ context.getString(R.string.config_copied),
-                            /* duration = */ Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onDeleteClick = {
-                        if (isCurrentServerConnected) {
-                            hiddify.stopVpn()
-                            activeServerId = null
-                            Toast.makeText(
-                                /* context = */ context,
-                                /* text = */ context.getString(R.string.connection_broken),
-                                /* duration = */ Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        if (server.id == effectiveSelectedId) {
-                            val nextServerId = servers.firstOrNull { it.id != server.id }?.id ?: 0
-                            serverViewModel.setLastServerId(nextServerId)
-                        }
-
-                        serverViewModel.remove(server)
-                        Toast.makeText(
-                            /* context = */ context,
-                            /* text = */ context.getString(R.string.server_deleted),
-                            /* duration = */ Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onLongClick = {
-                        if (!isEditMode) {
-                            isEditMode = true
-                        }
+                if (isEditMode) {
+                    Button(
+                        onClick = { isEditMode = false },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text(stringResource(R.string.done))
                     }
-                )
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            serverToEdit = null
+                            showServerSheet = true
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.add))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                items(servers, key = { it.id }) { server ->
+                    val isCurrentServerConnected = isConnected && (activeServerId == server.id)
+                    val isSelected = server.id == effectiveSelectedId
+
+                    ServerItem(
+                        server = server,
+                        isSelected = isSelected,
+                        isCurrentConnected = isCurrentServerConnected,
+                        isEditMode = isEditMode,
+                        onConnectClick = {
+                            serverViewModel.setLastServerId(server.id)
+                            handleStartClick(server.config, server.name, server.id)
+                        },
+                        onEditClick = {
+                            serverToEdit = server
+                            showServerSheet = true
+                        },
+                        onCopyClick = {
+                            clipboardManager.setText(AnnotatedString(server.config))
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.config_copied),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onDeleteClick = {
+                            if (isCurrentServerConnected) {
+                                hiddify.stopVpn()
+                                activeServerId = null
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.connection_broken),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                            if (server.id == effectiveSelectedId) {
+                                val nextServerId = servers.firstOrNull { it.id != server.id }?.id ?: 0
+                                serverViewModel.setLastServerId(nextServerId)
+                            }
+
+                            serverViewModel.remove(server)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.server_deleted),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onLongClick = {
+                            if (!isEditMode) {
+                                isEditMode = true
+                            }
+                        }
+                    )
+                }
             }
         }
-    }
 
-    if (showServerSheet) {
-        ServerBottomSheet(
-            serverToEdit = serverToEdit,
-            onDismiss = {
-                showServerSheet = false
-                serverToEdit = null
-            },
-            onSave = { name, config ->
-                if (serverToEdit != null) {
-                    serverViewModel.update(
-                        serverToEdit!!.copy(name = name, config = config)
-                    )
-                } else {
-                    serverViewModel.insert(config = config, name = name)
+        if (showServerSheet) {
+            ServerBottomSheet(
+                serverToEdit = serverToEdit,
+                onDismiss = {
+                    showServerSheet = false
+                    serverToEdit = null
+                },
+                onSave = { name, config ->
+                    if (serverToEdit != null) {
+                        serverViewModel.update(
+                            serverToEdit!!.copy(name = name, config = config)
+                        )
+                    } else {
+                        serverViewModel.insert(config = config, name = name)
+                    }
+                    showServerSheet = false
+                    serverToEdit = null
                 }
-                showServerSheet = false
-                serverToEdit = null
-            }
-        )
+            )
+        }
     }
 }

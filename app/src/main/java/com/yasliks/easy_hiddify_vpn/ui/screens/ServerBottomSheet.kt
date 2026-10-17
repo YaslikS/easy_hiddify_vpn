@@ -103,7 +103,7 @@ fun ServerBottomSheet(
                         modifier = Modifier.weight(1f),
                         onClick = {
                             if (serverName.isBlank()) serverName = "Debug VLESS"
-                            serverConfig = BuildConfig.vless_serv
+                            serverConfig = BuildConfig.vless_serv_2
                         }
                     ) {
                         Text("VLESS")
