@@ -16,9 +16,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     TopAppBar(
-        title = {
-            Text(text = title)
-        },
+        title = { Text(text = title) },
         navigationIcon = navigationIcon,
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(

@@ -1,5 +1,7 @@
 package com.yasliks.easy_hiddify_vpn.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -25,17 +27,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yas.database.data.ServerDTO
-import com.yasliks.easy_hiddify_vpn.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -43,6 +44,7 @@ fun ServerItem(
     server: ServerDTO,
     isSelected: Boolean,
     isCurrentConnected: Boolean,
+    isVpnActive: Boolean,
     isEditMode: Boolean,
     onConnectClick: () -> Unit,
     onEditClick: () -> Unit,
@@ -53,54 +55,53 @@ fun ServerItem(
 ) {
     val initials = server.name.trim().take(2).uppercase().ifEmpty { "SV" }
 
+    val textColorPrimary by animateColorAsState(if (isVpnActive) Color.White else MaterialTheme.colorScheme.onSurface, tween(1000), label = "")
+    val textColorSecondary by animateColorAsState(if (isVpnActive) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant, tween(1000), label = "")
+
     val cardBorder = when {
-        isCurrentConnected -> BorderStroke(2.dp, Color(0xFF4CAF50))
-        isSelected -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+        isCurrentConnected -> BorderStroke(2.dp, Color.White)
+        isSelected -> BorderStroke(2.dp, if (isVpnActive) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary)
         else -> null
     }
 
     val containerColor = when {
-        isEditMode -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-        isCurrentConnected -> Color(0xFF4CAF50).copy(alpha = 0.10f)
-        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        isEditMode -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        isCurrentConnected -> Color.White.copy(alpha = 0.25f)
+        isSelected -> if (isVpnActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+        else -> if (isVpnActive) Color.White.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
 
     val avatarBgColor = when {
-        isCurrentConnected -> Color(0xFF4CAF50)
-        isSelected -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.primaryContainer
+        isCurrentConnected -> Color.White
+        isSelected -> if (isVpnActive) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary
+        else -> if (isVpnActive) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.secondaryContainer
     }
 
     val avatarTextColor = when {
-        isCurrentConnected -> Color.White
-        isSelected -> MaterialTheme.colorScheme.onPrimary
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
+        isCurrentConnected -> Color(0xFF4CAF50)
+        isSelected -> if (isVpnActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onPrimary
+        else -> if (isVpnActive) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
     }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .combinedClickable(
-                onClick = {
-                    if (isEditMode) onEditClick() else onConnectClick()
-                },
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         border = cardBorder,
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Row(
             modifier = Modifier
+                .combinedClickable(
+                    onClick = { if (isEditMode) onEditClick() else onConnectClick() },
+                    onLongClick = onLongClick
+                )
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(avatarBgColor),
                 contentAlignment = Alignment.Center
@@ -113,16 +114,15 @@ fun ServerItem(
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = server.name,
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -130,29 +130,17 @@ fun ServerItem(
 
                     if (isCurrentConnected) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.connected),
-                            color = Color(0xFF4CAF50),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("CONNECTED", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     } else if (isSelected) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.selected_server),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("SELECTED", color = textColorPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = server.config,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = textColorSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -160,19 +148,11 @@ fun ServerItem(
 
             if (isEditMode) {
                 IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                 }
             } else {
                 IconButton(onClick = onCopyClick) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, tint = textColorPrimary)
                 }
             }
         }
