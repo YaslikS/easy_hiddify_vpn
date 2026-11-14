@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "server")
 data class ServerDTO(
     @PrimaryKey(autoGenerate = true)
-    var id: Int = 0,
-    var config: String,
-    var name: String,
+    val id: Int = 0,
+    val name: String,
+    val config: String,
+    val pingMs: Long = -1L,
 )

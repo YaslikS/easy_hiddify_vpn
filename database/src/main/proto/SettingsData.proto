@@ -5,4 +5,5 @@ option java_multiple_files = true;
 
 message SettingsData {
   int32 last_server_id = 1;
+  bool auto_start_vpn = 2;
 }

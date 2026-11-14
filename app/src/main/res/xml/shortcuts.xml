@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/outline_vpn_lock_24"
+        android:shortcutId="quick_connect"
+        android:shortcutLongLabel="@string/shortcut_quick_connect"
+        android:shortcutShortLabel="@string/shortcut_quick_connect">
+
+        <intent
+            android:action="com.yasliks.easy_hiddify_vpn.QUICK_CONNECT"
+            android:targetClass="com.yasliks.easy_hiddify_vpn.MainActivity"
+            android:targetPackage="com.yasliks.easy_hiddify_vpn" />
+
+    </shortcut>
+</shortcuts>

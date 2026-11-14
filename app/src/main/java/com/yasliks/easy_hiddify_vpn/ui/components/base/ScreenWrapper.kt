@@ -11,7 +11,7 @@ fun ScreenWrapper(
     showTopBar: Boolean = true,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -19,7 +19,7 @@ fun ScreenWrapper(
                 TopBar(
                     title = title,
                     navigationIcon = navigationIcon,
-                    actions = actions
+                    actions = actions,
                 )
             }
         }

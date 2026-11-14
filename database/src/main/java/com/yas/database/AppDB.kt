@@ -9,6 +9,7 @@ import com.yas.database.dao.ServerDao
 import com.yas.database.data.AppDTO
 import com.yas.database.data.ServerDTO
 import com.yas.database.migrations.MIGRATION_1_2
+import com.yas.database.migrations.MIGRATION_2_3
 
 
 @Database(
@@ -16,7 +17,7 @@ import com.yas.database.migrations.MIGRATION_1_2
         AppDTO::class,
         ServerDTO::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 internal abstract class AppDB : RoomDatabase() {
@@ -37,6 +38,7 @@ internal abstract class AppDB : RoomDatabase() {
                     name = "easy_hiddify_app.db",
                 )
                     .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_2_3)
                     .build().also {
                         INSTANCE = it
                     }

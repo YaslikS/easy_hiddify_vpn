@@ -25,7 +25,10 @@ internal object ProtoSettingsUtils : Serializer<SettingsData> {
         return defaultValue
     }
 
-    override suspend fun writeTo(t: SettingsData, output: OutputStream) {
+    override suspend fun writeTo(
+        t: SettingsData,
+        output: OutputStream,
+    ) {
         t.writeTo(output)
     }
 }

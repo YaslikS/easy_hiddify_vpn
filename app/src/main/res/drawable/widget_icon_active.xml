@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_active_green" />
+        </shape>
+    </item>
+
+    <item
+        android:drawable="@drawable/outline_vpn_lock_24"
+        android:bottom="16dp"
+        android:left="16dp"
+        android:right="16dp"
+        android:top="16dp"
+        android:tint="@color/widget_text_white" />
+</layer-list>

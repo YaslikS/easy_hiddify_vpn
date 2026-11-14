@@ -10,9 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 
-class ServerRepo private constructor(
-    private val dao: ServerDao,
-) : ServerDao {
+class ServerRepo private constructor(private val dao: ServerDao) : ServerDao {
 
     companion object {
         @Synchronized
@@ -28,7 +26,7 @@ class ServerRepo private constructor(
     }
 
     override suspend fun getAll(): List<ServerDTO> {
-       return dao.getAll()
+        return dao.getAll()
     }
 
     override suspend fun insert(data: ServerDTO) {
@@ -46,5 +44,4 @@ class ServerRepo private constructor(
     override suspend fun remove(data: ServerDTO) {
         dao.remove(data)
     }
-
 }

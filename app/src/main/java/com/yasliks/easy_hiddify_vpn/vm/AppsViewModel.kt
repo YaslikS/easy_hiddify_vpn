@@ -145,7 +145,7 @@ class AppsViewModel @Inject constructor(
     private fun saveIconToStorage(
         context: Context,
         packageName: String,
-        drawable: Drawable
+        drawable: Drawable,
     ): String? {
         return try {
             val bitmap = createBitmap(

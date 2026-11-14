@@ -7,4 +7,16 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Widgets: Light -->
+    <color name="widget_bg_color">#FDFDFD</color>
+    <color name="widget_card_bg_color">#F0F0F0</color>
+    <color name="widget_text_primary">#1C1B1F</color>
+    <color name="widget_text_secondary">#49454F</color>
+    <color name="widget_btn_inactive_color">#E3E3E3</color>
+    <color name="widget_icon_inactive_tint">#1C1B1F</color>
+
+    <!-- Common -->
+    <color name="widget_active_green">#4CAF50</color>
+    <color name="widget_text_white">#FFFFFF</color>
 </resources>
