@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yas.database.data.ServerDTO
 import com.yasliks.easy_hiddify_vpn.R
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -74,9 +76,17 @@ fun ServerItem(
     val scope = rememberCoroutineScope()
     var itemSize by remember { mutableStateOf(IntSize.Zero) }
     val offsetX = remember(server.id) { Animatable(0f) }
+    var isDragging by remember(server.id) { mutableStateOf(false) }
     var showDeleteDialog by remember(server.id) { mutableStateOf(false) }
 
     val currentConnected by rememberUpdatedState(isCurrentConnected)
+
+    LaunchedEffect(isCurrentConnected) {
+        if (isCurrentConnected && offsetX.value > 0f) {
+            isDragging = false
+            offsetX.animateTo(0f, spring())
+        }
+    }
 
     val initials = remember(server.name) {
         server.name.trim().take(2).uppercase().ifEmpty { "SV" }
@@ -243,46 +253,59 @@ fun ServerItem(
             .onSizeChanged { itemSize = it }
             .draggable(
                 orientation = Orientation.Horizontal,
+                onDragStarted = {
+                    isDragging = true
+                },
                 state = rememberDraggableState { delta ->
-                    scope.launch {
-                        val maxSwipe = itemSize.width.toFloat().coerceAtLeast(1f)
-                        val maxRightSwipe = if (currentConnected) 0f else maxSwipe
-                        val newOffset = (offsetX.value + delta).coerceIn(-maxSwipe, maxRightSwipe)
-                        offsetX.snapTo(newOffset)
+                    if (isDragging) {
+                        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                            val maxSwipe = itemSize.width.toFloat().coerceAtLeast(1f)
+                            val maxRightSwipe = if (currentConnected) 0f else maxSwipe
+                            val newOffset =
+                                (offsetX.value + delta).coerceIn(-maxSwipe, maxRightSwipe)
+                            offsetX.snapTo(newOffset)
+                        }
                     }
                 },
                 onDragStopped = { velocity ->
-                    val width = itemSize.width.toFloat()
-                    if (width > 0f) {
-                        val shouldDelete = (-offsetX.value) > width * 0.3f || velocity < -1500f
-                        val shouldEdit =
-                            !currentConnected && (offsetX.value > width * 0.3f || velocity > 1500f)
+                    isDragging = false
+                    scope.launch {
+                        val width = itemSize.width.toFloat()
+                        if (width > 0f) {
+                            val currentOffset = offsetX.value
+                            val shouldDelete = currentOffset < 0f &&
+                                    ((-currentOffset) > width * 0.3f || velocity < -1500f)
+                            val shouldEdit = !currentConnected && currentOffset > 0f &&
+                                    (currentOffset > width * 0.3f || velocity > 1500f)
 
-                        when {
-                            shouldDelete -> {
-                                val holdOffset =
-                                    -with(density) { 96.dp.toPx() }.coerceAtMost(width * 0.4f)
-                                offsetX.animateTo(
-                                    targetValue = holdOffset,
-                                    animationSpec = spring(),
-                                )
-                                showDeleteDialog = true
-                            }
+                            when {
+                                shouldDelete -> {
+                                    val holdOffset = -with(density) { 96.dp.toPx() }
+                                        .coerceAtMost(width * 0.4f)
+                                    offsetX.animateTo(
+                                        targetValue = holdOffset,
+                                        animationSpec = spring(),
+                                    )
+                                    showDeleteDialog = true
+                                }
 
-                            shouldEdit -> {
-                                onEditClick()
-                                offsetX.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(),
-                                )
-                            }
+                                shouldEdit -> {
+                                    onEditClick()
+                                    offsetX.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(),
+                                    )
+                                }
 
-                            else -> {
-                                offsetX.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(),
-                                )
+                                else -> {
+                                    offsetX.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(),
+                                    )
+                                }
                             }
+                        } else {
+                            offsetX.snapTo(0f)
                         }
                     }
                 },
