@@ -7,13 +7,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -26,6 +31,7 @@ import com.yasliks.easy_hiddify_vpn.ui.components.AppListItem
 import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.ui.components.base.TopBar
 import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
+import com.yasliks.easy_hiddify_vpn.vm.AppsFilter
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import kotlinx.collections.immutable.persistentListOf
@@ -38,31 +44,24 @@ fun AppsScreen(
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
     val apps by appsViewModel.apps.collectAsStateWithLifecycle(initialValue = persistentListOf())
     val searchAppsStr by appsViewModel.searchAppsStr.collectAsStateWithLifecycle()
+    val appsFilter by appsViewModel.appsFilter.collectAsStateWithLifecycle()
     val isAllSelected by appsViewModel.isAllSelected.collectAsStateWithLifecycle(initialValue = false)
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val topBarActions: @Composable RowScope.() -> Unit = {
-        IconButton(
-            enabled = !isConnected,
-            onClick = { appsViewModel.changeAllStateApps(!isAllSelected) },
-        ) {
-            Icon(
-                imageVector = if (!isAllSelected) {
-                    Icons.Default.Checklist
-                } else {
-                    Icons.Default.ClearAll
-                },
-                contentDescription = null,
-            )
-        }
-    }
-
     ScreenWrapper(
         title = stringResource(R.string.tunneling),
         showTopBar = !isLandscape,
-        actions = topBarActions,
+        actions = {
+            AppsTopBarActions(
+                isConnected = isConnected,
+                isAllSelected = isAllSelected,
+                appsFilter = appsFilter,
+                onFilterChange = appsViewModel::changeAppsFilter,
+                onToggleAll = { appsViewModel.changeAllStateApps(!isAllSelected) },
+            )
+        },
     ) { innerPadding ->
         if (isLandscape) {
             Row(modifier = Modifier.fillMaxSize()) {
@@ -73,7 +72,15 @@ fun AppsScreen(
                 ) {
                     TopBar(
                         title = stringResource(R.string.tunneling),
-                        actions = topBarActions
+                        actions = {
+                            AppsTopBarActions(
+                                isConnected = isConnected,
+                                isAllSelected = isAllSelected,
+                                appsFilter = appsFilter,
+                                onFilterChange = appsViewModel::changeAppsFilter,
+                                onToggleAll = { appsViewModel.changeAllStateApps(!isAllSelected) },
+                            )
+                        },
                     )
                     AppsSearchField(
                         searchQuery = searchAppsStr,
@@ -106,6 +113,87 @@ fun AppsScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AppsTopBarActions(
+    isConnected: Boolean,
+    isAllSelected: Boolean,
+    appsFilter: AppsFilter,
+    onFilterChange: (AppsFilter) -> Unit,
+    onToggleAll: () -> Unit,
+) {
+    var showFilterMenu by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { showFilterMenu = true }) {
+            Icon(
+                imageVector = Icons.Default.FilterList,
+                contentDescription = null,
+                tint = if (appsFilter != AppsFilter.ALL) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    LocalContentColor.current
+                },
+            )
+        }
+
+        DropdownMenu(
+            expanded = showFilterMenu,
+            onDismissRequest = { showFilterMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.filter_all)) },
+                trailingIcon = {
+                    if (appsFilter == AppsFilter.ALL) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onFilterChange(AppsFilter.ALL)
+                    showFilterMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.filter_enabled)) },
+                trailingIcon = {
+                    if (appsFilter == AppsFilter.ENABLED) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onFilterChange(AppsFilter.ENABLED)
+                    showFilterMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.filter_disabled)) },
+                trailingIcon = {
+                    if (appsFilter == AppsFilter.DISABLED) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onFilterChange(AppsFilter.DISABLED)
+                    showFilterMenu = false
+                },
+            )
+        }
+    }
+
+    IconButton(
+        enabled = !isConnected,
+        onClick = onToggleAll,
+    ) {
+        Icon(
+            imageVector = if (!isAllSelected) {
+                Icons.Default.Checklist
+            } else {
+                Icons.Default.ClearAll
+            },
+            contentDescription = null,
+        )
     }
 }
 

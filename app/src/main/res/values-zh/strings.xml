@@ -1,0 +1,128 @@
+<resources>
+    <!-- ==================== App & Navigation ==================== -->
+    <string name="main">首页</string>
+    <string name="apps">应用</string>
+    <string name="settings">设置</string>
+    <string name="tunneling">分应用代理</string>
+
+    <!-- ==================== Main Screen & Traffic ==================== -->
+    <string name="status_ready">准备连接</string>
+    <string name="status_secure">安全连接已激活</string>
+    <string name="download">下载</string>
+    <string name="upload">上传</string>
+    <string name="speed">速度 %1$s</string>
+    <string name="total">总计：%1$s</string>
+
+    <!-- ==================== Servers & Bottom Sheet ==================== -->
+    <string name="saved_ervers">已保存的服务器</string>
+    <string name="editing_servers">编辑服务器</string>
+    <string name="add">添加</string>
+    <string name="done">完成</string>
+    <string name="save">保存</string>
+    <string name="add_server">添加服务器</string>
+    <string name="edit_server">编辑服务器</string>
+    <string name="server_name">服务器名称</string>
+    <string name="config">配置</string>
+    <string name="connected">● 已连接</string>
+    <string name="selected_server">● 已选择</string>
+    <string name="ping_timeout">超时</string>
+    <string name="ping_ms">%1$d ms</string>
+    <string name="list_servers_empty">服务器列表为空，请先添加服务器</string>
+    <string name="config_copied">配置已复制</string>
+    <string name="connection_broken">连接已断开</string>
+    <string name="server_deleted">服务器已删除</string>
+    <string name="delete_server_dialog_title">删除服务器</string>
+    <string name="delete_server_dialog_desc">您确定要删除服务器“%1$s”吗？</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+
+    <!-- ==================== Applications (Tunneling) Screen ==================== -->
+    <string name="search_apps_placeholder">按名称或包名搜索…</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_enabled">已启用</string>
+    <string name="filter_disabled">已禁用</string>
+
+    <!-- ==================== Settings Screen ==================== -->
+    <string name="settings_reconnect_warning">注意：更改将在重新连接后生效。</string>
+    <string name="settings_view_logs">查看应用日志</string>
+
+    <!-- Settings: Groups -->
+    <string name="settings_group_app">应用设置</string>
+    <string name="settings_group_performance">性能与网络</string>
+    <string name="settings_group_routing">路由与安全</string>
+    <string name="settings_group_advanced">高级调整</string>
+
+    <!-- Settings: Items -->
+    <string name="settings_auto_start_title">自动启动 VPN</string>
+    <string name="settings_auto_start_subtitle">启动应用时自动连接到上次使用的服务器。</string>
+
+    <string name="settings_fake_ip_title">FakeIP（DNS 加速）</string>
+    <string name="settings_fake_ip_subtitle">立即为 DNS 查询返回虚拟 IP。</string>
+
+    <string name="settings_mux_title">多路复用 (Mux)</string>
+    <string name="settings_mux_subtitle">降低延迟并节省电池电量。</string>
+
+    <string name="settings_ipv6_title">启用 IPv6</string>
+    <string name="settings_ipv6_subtitle">禁用以防止潜在的 IP 泄露。</string>
+
+    <string name="settings_strict_route_title">严格路由</string>
+    <string name="settings_strict_route_subtitle">防止在网络切换期间发生 IP 泄露。</string>
+
+    <string name="settings_adblock_title">广告拦截 (geosite)</string>
+    <string name="settings_adblock_subtitle">在 DNS 级别拦截广告和追踪器。</string>
+
+    <string name="settings_bypass_lan_title">绕过局域网 (LAN)</string>
+    <string name="settings_bypass_lan_subtitle">无需通过 VPN 即可访问本地网络设备。</string>
+
+    <string name="settings_allow_lan_title">允许局域网连接</string>
+    <string name="settings_allow_lan_subtitle">通过 10808 端口代理共享此 VPN。</string>
+
+    <!-- Settings: Advanced Tuning -->
+    <string name="settings_split_domains_label">分流域名</string>
+    <string name="settings_split_domains_hint">例如：sberbank.com</string>
+    <string name="settings_custom_dns_label">自定义 DNS</string>
+    <string name="settings_custom_dns_hint">默认：8.8.8.8</string>
+    <string name="settings_mtu_label">MTU</string>
+    <string name="settings_mtu_hint">若连接容易中断请调小。默认：1500</string>
+    <string name="settings_log_level_label">日志级别</string>
+    <string name="settings_log_level_hint">排查问题时请使用 \'DEBUG\'。</string>
+
+    <!-- ==================== Logs Screen ==================== -->
+    <string name="logs_title">日志 (%1$d)</string>
+    <string name="share_logs">分享日志</string>
+    <string name="logs_clip_label">日志</string>
+    <string name="logs_copied">已复制</string>
+    <string name="logs_empty">日志列表为空</string>
+
+    <!-- ==================== Dialogs, Permissions & Notifications ==================== -->
+    <string name="ok">确定</string>
+    <string name="push_button_text">断开服务器</string>
+    <string name="shortcut_quick_connect">快速连接</string>
+    <string name="vpn_permission_required_title">需要权限</string>
+    <string name="vpn_permission_required_desc">请先打开应用以授予 VPN 权限。</string>
+    <string name="permission_required_toast">请点击启动按钮以授予所需权限</string>
+    <string name="permission_dialog_title">需要权限</string>
+    <string name="permission_dialog_desc">您尝试通过小组件或快捷方式连接，但缺少系统权限。\n\n请点击下方的启动按钮以授予必要的权限。</string>
+    <string name="empty_server_dialog_title">未找到服务器</string>
+    <string name="empty_server_dialog_desc">您还没有保存任何 VPN 服务器。\n\n请在连接前先在应用中添加服务器。</string>
+
+    <!-- ==================== Widgets ==================== -->
+    <string name="widget_connected">已连接</string>
+    <string name="widget_disconnected">未连接</string>
+    <string name="widget_ready">准备连接</string>
+    <string name="widget_secure">安全连接已激活</string>
+    <string name="widget_download">↓ 下载</string>
+    <string name="widget_upload">↑ 上传</string>
+    <string name="widget_zero_speed">0 B/s</string>
+
+    <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_on">VPN：开启</string>
+    <string name="tile_secure">安全</string>
+    <string name="tile_vpn_off">VPN：关闭</string>
+    <string name="tile_tap_to_connect">点击连接</string>
+
+    <!-- ==================== Accessibility (Content Descriptions) ==================== -->
+    <string name="cd_power">电源</string>
+    <string name="cd_ping_servers">测试服务器延迟</string>
+    <string name="cd_back">返回</string>
+</resources>

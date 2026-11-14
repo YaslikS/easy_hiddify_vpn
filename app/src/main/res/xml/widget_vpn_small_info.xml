@@ -2,7 +2,8 @@
     android:initialLayout="@layout/widget_vpn_small"
     android:minWidth="110dp"
     android:minHeight="110dp"
-    android:resizeMode="horizontal|vertical"
+    android:previewLayout="@layout/widget_vpn_small"
+    android:resizeMode="none"
     android:targetCellHeight="2"
     android:targetCellWidth="2"
     android:widgetCategory="home_screen" />

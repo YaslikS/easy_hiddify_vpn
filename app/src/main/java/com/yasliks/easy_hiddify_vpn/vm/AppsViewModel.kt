@@ -1,8 +1,6 @@
 package com.yasliks.easy_hiddify_vpn.vm
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -10,29 +8,31 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.toLowerCase
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yas.database.data.AppDTO
 import com.yas.database.repo.AppsRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
-import java.lang.ref.WeakReference
-import javax.inject.Inject
-import androidx.core.graphics.createBitmap
-import kotlinx.coroutines.flow.Flow
 import java.util.Locale
+import javax.inject.Inject
 
+enum class AppsFilter {
+    ALL,
+    ENABLED,
+    DISABLED,
+}
 
 @HiltViewModel
 class AppsViewModel @Inject constructor(
@@ -44,16 +44,29 @@ class AppsViewModel @Inject constructor(
         private set
 
     private val _searchAppsStr = MutableStateFlow("")
-    val searchAppsStr: StateFlow<String> = _searchAppsStr
+    val searchAppsStr: StateFlow<String> = _searchAppsStr.asStateFlow()
 
-    val apps = appsRepo.getAllFlow().combine(_searchAppsStr) { list, query ->
+    private val _appsFilter = MutableStateFlow(AppsFilter.ALL)
+    val appsFilter: StateFlow<AppsFilter> = _appsFilter.asStateFlow()
+
+    val apps = combine(
+        appsRepo.getAllFlow(),
+        _searchAppsStr,
+        _appsFilter,
+    ) { list, query, filter ->
+        val filteredByState = when (filter) {
+            AppsFilter.ALL -> list
+            AppsFilter.ENABLED -> list.filter { it.isSelected }
+            AppsFilter.DISABLED -> list.filter { !it.isSelected }
+        }
+
         if (query.isNotEmpty()) {
-            list.filter { app ->
+            filteredByState.filter { app ->
                 app.name.contains(query, ignoreCase = true) ||
                         app.packageName.contains(query, ignoreCase = true)
             }
         } else {
-            list
+            filteredByState
         }
     }
 
@@ -83,6 +96,10 @@ class AppsViewModel @Inject constructor(
         _searchAppsStr.value = value
     }
 
+    fun changeAppsFilter(filter: AppsFilter) {
+        _appsFilter.value = filter
+    }
+
     /**
      * Changes the status of the VPN application
      */
@@ -100,9 +117,7 @@ class AppsViewModel @Inject constructor(
     fun changeAllStateApps(isSelected: Boolean = true) {
         viewModelScope.launch {
             val apps = appsRepo.getAll()
-            for (app in apps) {
-                appsRepo.insert(app.copy(isSelected = isSelected))
-            }
+            appsRepo.insert(apps.map { it.copy(isSelected = isSelected) })
         }
     }
 
@@ -140,7 +155,6 @@ class AppsViewModel @Inject constructor(
 
         appsRepo.insert(appsInPhone)
     }
-
 
     private fun saveIconToStorage(
         context: Context,

@@ -20,13 +20,18 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 17
-        versionName = "2.2.3"
+        versionName = "2.2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
             abiFilters.addAll(setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
+    }
+
+    androidResources {
+        generateLocaleConfig = true
+        localeFilters += listOf("en", "ru", "fr", "zh", "it", "es")
     }
 
     compileOptions {

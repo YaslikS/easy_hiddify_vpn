@@ -1,0 +1,128 @@
+<resources>
+    <!-- ==================== App & Navigation ==================== -->
+    <string name="main">Accueil</string>
+    <string name="apps">Applications</string>
+    <string name="settings">Paramètres</string>
+    <string name="tunneling">Tunnelisation</string>
+
+    <!-- ==================== Main Screen & Traffic ==================== -->
+    <string name="status_ready">PRÊT À SE CONNECTER</string>
+    <string name="status_secure">CONNEXION SÉCURISÉE ACTIVE</string>
+    <string name="download">Téléchargement</string>
+    <string name="upload">Envoi</string>
+    <string name="speed">Vitesse %1$s</string>
+    <string name="total">Total : %1$s</string>
+
+    <!-- ==================== Servers & Bottom Sheet ==================== -->
+    <string name="saved_ervers">Serveurs enregistrés</string>
+    <string name="editing_servers">Modification</string>
+    <string name="add">Ajouter</string>
+    <string name="done">Terminé</string>
+    <string name="save">Enregistrer</string>
+    <string name="add_server">Ajouter un serveur</string>
+    <string name="edit_server">Modifier le serveur</string>
+    <string name="server_name">Nom du serveur</string>
+    <string name="config">Configuration</string>
+    <string name="connected">● Connecté</string>
+    <string name="selected_server">● Sélectionné</string>
+    <string name="ping_timeout">Délai dépassé</string>
+    <string name="ping_ms">%1$d ms</string>
+    <string name="list_servers_empty">La liste des serveurs est vide. Ajoutez un serveur</string>
+    <string name="config_copied">La configuration a été copiée</string>
+    <string name="connection_broken">La connexion a été interrompue</string>
+    <string name="server_deleted">Le serveur a été supprimé</string>
+    <string name="delete_server_dialog_title">Supprimer le serveur</string>
+    <string name="delete_server_dialog_desc">Voulez-vous vraiment supprimer le serveur « %1$s » ?</string>
+    <string name="delete">Supprimer</string>
+    <string name="cancel">Annuler</string>
+
+    <!-- ==================== Applications (Tunneling) Screen ==================== -->
+    <string name="search_apps_placeholder">Rechercher par nom ou paquet…</string>
+    <string name="filter_all">Toutes</string>
+    <string name="filter_enabled">Activées</string>
+    <string name="filter_disabled">Désactivées</string>
+
+    <!-- ==================== Settings Screen ==================== -->
+    <string name="settings_reconnect_warning">Attention : les modifications prendront effet après la reconnexion.</string>
+    <string name="settings_view_logs">Voir les journaux de l\'application</string>
+
+    <!-- Settings: Groups -->
+    <string name="settings_group_app">Paramètres de l\'application</string>
+    <string name="settings_group_performance">Performance et réseau</string>
+    <string name="settings_group_routing">Routage et sécurité</string>
+    <string name="settings_group_advanced">Paramètres avancés</string>
+
+    <!-- Settings: Items -->
+    <string name="settings_auto_start_title">Démarrage auto du VPN</string>
+    <string name="settings_auto_start_subtitle">Se connecter au dernier serveur au lancement.</string>
+
+    <string name="settings_fake_ip_title">FakeIP (accélération DNS)</string>
+    <string name="settings_fake_ip_subtitle">Renvoie instantanément une IP fictive pour le DNS.</string>
+
+    <string name="settings_mux_title">Multiplexage (Mux)</string>
+    <string name="settings_mux_subtitle">Réduit la latence et économise la batterie.</string>
+
+    <string name="settings_ipv6_title">Activer IPv6</string>
+    <string name="settings_ipv6_subtitle">Désactivez pour éviter d\'éventuelles fuites d\'IP.</string>
+
+    <string name="settings_strict_route_title">Routage strict</string>
+    <string name="settings_strict_route_subtitle">Empêche les fuites d\'IP lors des changements de réseau.</string>
+
+    <string name="settings_adblock_title">Bloqueur de pub (geosite)</string>
+    <string name="settings_adblock_subtitle">Bloque les publicités et traqueurs au niveau DNS.</string>
+
+    <string name="settings_bypass_lan_title">Contourner le LAN</string>
+    <string name="settings_bypass_lan_subtitle">Accéder aux appareils du réseau local sans VPN.</string>
+
+    <string name="settings_allow_lan_title">Autoriser les connexions LAN</string>
+    <string name="settings_allow_lan_subtitle">Partager ce VPN via proxy sur le port 10808.</string>
+
+    <!-- Settings: Advanced Tuning -->
+    <string name="settings_split_domains_label">Domaines en tunnel fractionné</string>
+    <string name="settings_split_domains_hint">ex. : sberbank.com</string>
+    <string name="settings_custom_dns_label">DNS personnalisé</string>
+    <string name="settings_custom_dns_hint">Par défaut : 8.8.8.8</string>
+    <string name="settings_mtu_label">MTU</string>
+    <string name="settings_mtu_hint">Diminuez si la connexion coupe. Par défaut : 1500</string>
+    <string name="settings_log_level_label">Niveau de journalisation</string>
+    <string name="settings_log_level_hint">Utilisez \'DEBUG\' pour le dépannage.</string>
+
+    <!-- ==================== Logs Screen ==================== -->
+    <string name="logs_title">Journaux (%1$d)</string>
+    <string name="share_logs">Partager</string>
+    <string name="logs_clip_label">Journaux</string>
+    <string name="logs_copied">Copié</string>
+    <string name="logs_empty">La liste des journaux est vide</string>
+
+    <!-- ==================== Dialogs, Permissions & Notifications ==================== -->
+    <string name="ok">OK</string>
+    <string name="push_button_text">Déconnecter le serveur</string>
+    <string name="shortcut_quick_connect">Connexion rapide</string>
+    <string name="vpn_permission_required_title">Autorisation requise</string>
+    <string name="vpn_permission_required_desc">Veuillez d\'abord ouvrir l\'application pour accorder l\'autorisation VPN.</string>
+    <string name="permission_required_toast">Appuyez sur DÉMARRER pour accorder les autorisations requises</string>
+    <string name="permission_dialog_title">Autorisation requise</string>
+    <string name="permission_dialog_desc">Vous avez essayé de vous connecter via un widget ou un raccourci, mais des autorisations système sont manquantes.\n\nVeuillez appuyer sur le bouton de démarrage ci-dessous pour accorder les autorisations nécessaires.</string>
+    <string name="empty_server_dialog_title">Aucun serveur trouvé</string>
+    <string name="empty_server_dialog_desc">Vous n\'avez pas encore de serveurs VPN enregistrés.\n\nVeuillez ajouter un serveur dans l\'application avant de vous connecter.</string>
+
+    <!-- ==================== Widgets ==================== -->
+    <string name="widget_connected">CONNECTÉ</string>
+    <string name="widget_disconnected">DÉCONNECTÉ</string>
+    <string name="widget_ready">PRÊT À SE CONNECTER</string>
+    <string name="widget_secure">CONNEXION SÉCURISÉE ACTIVE</string>
+    <string name="widget_download">↓ Téléchargement</string>
+    <string name="widget_upload">↑ Envoi</string>
+    <string name="widget_zero_speed">0 B/s</string>
+
+    <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_on">VPN : Activé</string>
+    <string name="tile_secure">Sécurisé</string>
+    <string name="tile_vpn_off">VPN : Désactivé</string>
+    <string name="tile_tap_to_connect">Appuyez pour connecter</string>
+
+    <!-- ==================== Accessibility (Content Descriptions) ==================== -->
+    <string name="cd_power">Alimentation</string>
+    <string name="cd_ping_servers">Tester le ping des serveurs</string>
+    <string name="cd_back">Retour</string>
+</resources>

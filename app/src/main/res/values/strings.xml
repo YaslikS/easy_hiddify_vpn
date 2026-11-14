@@ -1,6 +1,6 @@
 <resources>
     <!-- ==================== App & Navigation ==================== -->
-    <string name="app_name">easy_hiddify_vpn</string>
+    <string name="app_name" translatable="false">easy_hiddify_vpn</string>
     <string name="main">Main</string>
     <string name="apps">Applications</string>
     <string name="settings">Settings</string>
@@ -26,16 +26,23 @@
     <string name="config">Config</string>
     <string name="connected">● Connected</string>
     <string name="selected_server">● Selected</string>
-    <string name="ping_unknown">—</string>
+    <string name="ping_unknown" translatable="false">—</string>
     <string name="ping_timeout">Timeout</string>
     <string name="ping_ms">%1$d ms</string>
     <string name="list_servers_empty">The list of servers is empty. Add a server</string>
     <string name="config_copied">The config has been copied</string>
     <string name="connection_broken">The connection is broken</string>
     <string name="server_deleted">The server has been deleted</string>
+    <string name="delete_server_dialog_title">Delete Server</string>
+    <string name="delete_server_dialog_desc">Are you sure you want to delete \"%1$s\"?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
 
     <!-- ==================== Applications (Tunneling) Screen ==================== -->
     <string name="search_apps_placeholder">Search by name or package…</string>
+    <string name="filter_all">All</string>
+    <string name="filter_enabled">Enabled</string>
+    <string name="filter_disabled">Disabled</string>
 
     <!-- ==================== Settings Screen ==================== -->
     <string name="settings_reconnect_warning">Warning: Changes take effect after reconnecting.</string>
@@ -122,10 +129,10 @@
     <string name="cd_back">Back</string>
 
     <!-- ==================== Debug ==================== -->
-    <string name="debug_vless">VLESS</string>
-    <string name="debug_vless_name">Debug VLESS</string>
-    <string name="debug_ss">SS</string>
-    <string name="debug_ss_name">Debug SS</string>
-    <string name="debug_trojan">TROJAN</string>
-    <string name="debug_trojan_name">Debug TROJAN</string>
+    <string name="debug_vless" translatable="false">VLESS</string>
+    <string name="debug_vless_name" translatable="false">Debug VLESS</string>
+    <string name="debug_ss" translatable="false">SS</string>
+    <string name="debug_ss_name" translatable="false">Debug SS</string>
+    <string name="debug_trojan" translatable="false">TROJAN</string>
+    <string name="debug_trojan_name" translatable="false">Debug TROJAN</string>
 </resources>

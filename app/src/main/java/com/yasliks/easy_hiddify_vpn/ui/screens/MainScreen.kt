@@ -8,7 +8,6 @@ import android.content.res.Configuration
 import android.net.VpnService
 import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
@@ -77,7 +76,6 @@ fun MainScreen(
     var pendingServerId by rememberSaveable { mutableStateOf<Int?>(null) }
     var activeServerId by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    var isEditMode by rememberSaveable { mutableStateOf(false) }
     var showServerSheet by rememberSaveable { mutableStateOf(false) }
     var serverToEdit by remember { mutableStateOf<ServerDTO?>(null) }
 
@@ -115,7 +113,6 @@ fun MainScreen(
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
-    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
 
     val targetMainTextColor = remember(isConnected, onSurfaceColor) {
         if (isConnected) Color.White else onSurfaceColor
@@ -128,12 +125,6 @@ fun MainScreen(
     }
     val targetButtonBorderColor = remember(isConnected, outlineColor) {
         if (isConnected) Color.White.copy(alpha = 0.5f) else outlineColor
-    }
-    val targetButtonContainerColor = remember(isConnected, primaryColor) {
-        if (isConnected) Color.White else primaryColor
-    }
-    val targetButtonOnContainerColor = remember(isConnected, onPrimaryColor) {
-        if (isConnected) Color(0xFF4CAF50) else onPrimaryColor
     }
 
     val mainTextColor by animateColorAsState(targetMainTextColor, tween(1000), label = "mainText")
@@ -148,23 +139,11 @@ fun MainScreen(
         tween(1000),
         label = "btnBorder"
     )
-    val buttonContainerColor by animateColorAsState(
-        targetButtonContainerColor,
-        tween(1000),
-        label = "btnContainer"
-    )
-    val buttonOnContainerColor by animateColorAsState(
-        targetButtonOnContainerColor,
-        tween(1000),
-        label = "btnOnContainer"
-    )
 
     LaunchedEffect(isConnected, serviceActiveServerId) {
         activeServerId = if (!isConnected) null else serviceActiveServerId ?: activeServerId
         ?: effectiveSelectedId
     }
-
-    BackHandler(enabled = isEditMode) { isEditMode = false }
 
     @SuppressLint("LocalContextGetResourceValueCall")
     val startHiddify = {
@@ -277,17 +256,12 @@ fun MainScreen(
                         Column(modifier = Modifier.weight(.6f).fillMaxHeight()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             ServersHeaderSection(
-                                isEditMode = isEditMode,
-                                isLandscape = true,
                                 hasServers = servers.isNotEmpty(),
                                 isPinging = isPinging,
                                 mainTextColor = mainTextColor,
-                                buttonContainerColor = buttonContainerColor,
-                                buttonOnContainerColor = buttonOnContainerColor,
                                 buttonBorderColor = buttonBorderColor,
                                 buttonContentColor = buttonContentColor,
                                 onPingClick = serverViewModel::pingAllServers,
-                                onDoneEditClick = { isEditMode = false },
                                 onAddServerClick = { serverToEdit = null; showServerSheet = true }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -296,7 +270,6 @@ fun MainScreen(
                                 effectiveSelectedId = effectiveSelectedId,
                                 activeServerId = activeServerId,
                                 isConnected = isConnected,
-                                isEditMode = isEditMode,
                                 onConnectClick = { server ->
                                     serverViewModel.setLastServerId(server.id)
                                     handleStartClick(server.config, server.name, server.id)
@@ -324,7 +297,6 @@ fun MainScreen(
                                     }
                                     serverViewModel.remove(server)
                                 },
-                                onLongClick = { if (!isEditMode) isEditMode = true },
                                 modifier = Modifier.weight(1f, fill = false)
                             )
                         }
@@ -340,17 +312,12 @@ fun MainScreen(
                         TrafficSection(hiddify = hiddify, isConnected = isConnected)
                         Spacer(modifier = Modifier.height(12.dp))
                         ServersHeaderSection(
-                            isEditMode = isEditMode,
-                            isLandscape = false,
                             hasServers = servers.isNotEmpty(),
                             isPinging = isPinging,
                             mainTextColor = mainTextColor,
-                            buttonContainerColor = buttonContainerColor,
-                            buttonOnContainerColor = buttonOnContainerColor,
                             buttonBorderColor = buttonBorderColor,
                             buttonContentColor = buttonContentColor,
                             onPingClick = serverViewModel::pingAllServers,
-                            onDoneEditClick = { isEditMode = false },
                             onAddServerClick = { serverToEdit = null; showServerSheet = true }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -359,7 +326,6 @@ fun MainScreen(
                             effectiveSelectedId = effectiveSelectedId,
                             activeServerId = activeServerId,
                             isConnected = isConnected,
-                            isEditMode = isEditMode,
                             onConnectClick = { server ->
                                 serverViewModel.setLastServerId(server.id)
                                 handleStartClick(server.config, server.name, server.id)
@@ -387,7 +353,6 @@ fun MainScreen(
                                 }
                                 serverViewModel.remove(server)
                             },
-                            onLongClick = { if (!isEditMode) isEditMode = true },
                             modifier = Modifier.weight(1f, fill = false)
                         )
                     }
@@ -489,17 +454,12 @@ private fun TrafficSection(
 
 @Composable
 private fun ServersHeaderSection(
-    isEditMode: Boolean,
-    isLandscape: Boolean,
     hasServers: Boolean,
     isPinging: Boolean,
     mainTextColor: Color,
-    buttonContainerColor: Color,
-    buttonOnContainerColor: Color,
     buttonBorderColor: Color,
     buttonContentColor: Color,
     onPingClick: () -> Unit,
-    onDoneEditClick: () -> Unit,
     onAddServerClick: () -> Unit
 ) {
     Row(
@@ -509,15 +469,13 @@ private fun ServersHeaderSection(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = if (isEditMode) stringResource(R.string.editing_servers) else stringResource(
-                    R.string.saved_ervers
-                ),
+                text = stringResource(R.string.saved_ervers),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = mainTextColor
             )
 
-            if (!isEditMode && hasServers) {
+            if (hasServers) {
                 Spacer(modifier = Modifier.width(6.dp))
                 IconButton(
                     onClick = onPingClick,
@@ -542,34 +500,20 @@ private fun ServersHeaderSection(
             }
         }
 
-        if (isEditMode) {
-            Button(
-                onClick = onDoneEditClick,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                modifier = Modifier.height(32.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonContainerColor,
-                    contentColor = buttonOnContainerColor
-                )
-            ) {
-                Text(stringResource(R.string.done), fontSize = 12.sp)
-            }
-        } else {
-            OutlinedButton(
-                onClick = onAddServerClick,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                modifier = Modifier.height(32.dp),
-                border = BorderStroke(1.dp, buttonBorderColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonContentColor)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.add), fontSize = 12.sp)
-            }
+        OutlinedButton(
+            onClick = onAddServerClick,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+            modifier = Modifier.height(32.dp),
+            border = BorderStroke(1.dp, buttonBorderColor),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonContentColor)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.add), fontSize = 12.sp)
         }
     }
 }
@@ -580,12 +524,10 @@ private fun ServersListSection(
     effectiveSelectedId: Int,
     activeServerId: Int?,
     isConnected: Boolean,
-    isEditMode: Boolean,
     onConnectClick: (ServerDTO) -> Unit,
     onEditClick: (ServerDTO) -> Unit,
     onCopyClick: (ServerDTO) -> Unit,
     onDeleteClick: (ServerDTO) -> Unit,
-    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -599,18 +541,19 @@ private fun ServersListSection(
             ),
         contentPadding = PaddingValues(0.dp)
     ) {
-        itemsIndexed(items = servers, key = { _, server -> server.id }) { index, server ->
+        itemsIndexed(
+            items = servers,
+            key = { _, server -> server.id },
+        ) { index, server ->
             ServerItem(
                 server = server,
                 isSelected = server.id == effectiveSelectedId,
                 isCurrentConnected = isConnected && activeServerId == server.id,
                 isVpnActive = isConnected,
-                isEditMode = isEditMode,
                 onConnectClick = { onConnectClick(server) },
                 onEditClick = { onEditClick(server) },
                 onCopyClick = { onCopyClick(server) },
                 onDeleteClick = { onDeleteClick(server) },
-                onLongClick = onLongClick,
             )
 
             if (index < servers.lastIndex) {

@@ -1,0 +1,128 @@
+<resources>
+    <!-- ==================== App & Navigation ==================== -->
+    <string name="main">Главная</string>
+    <string name="apps">Приложения</string>
+    <string name="settings">Настройки</string>
+    <string name="tunneling">Туннелирование</string>
+
+    <!-- ==================== Main Screen & Traffic ==================== -->
+    <string name="status_ready">ГОТОВ К ПОДКЛЮЧЕНИЮ</string>
+    <string name="status_secure">ЗАЩИЩЕННОЕ СОЕДИНЕНИЕ АКТИВНО</string>
+    <string name="download">Загрузка</string>
+    <string name="upload">Отдача</string>
+    <string name="speed">Скорость %1$s</string>
+    <string name="total">Всего: %1$s</string>
+
+    <!-- ==================== Servers & Bottom Sheet ==================== -->
+    <string name="saved_ervers">Сохраненные серверы</string>
+    <string name="editing_servers">Редактирование</string>
+    <string name="add">Добавить</string>
+    <string name="done">Готово</string>
+    <string name="save">Сохранить</string>
+    <string name="add_server">Добавить сервер</string>
+    <string name="edit_server">Редактировать сервер</string>
+    <string name="server_name">Имя сервера</string>
+    <string name="config">Конфигурация</string>
+    <string name="connected">● Подключено</string>
+    <string name="selected_server">● Выбран</string>
+    <string name="ping_timeout">Тайм-аут</string>
+    <string name="ping_ms">%1$d мс</string>
+    <string name="list_servers_empty">Список серверов пуст. Добавьте сервер</string>
+    <string name="config_copied">Конфигурация скопирована</string>
+    <string name="connection_broken">Соединение прервано</string>
+    <string name="server_deleted">Сервер удален</string>
+    <string name="delete_server_dialog_title">Удаление сервера</string>
+    <string name="delete_server_dialog_desc">Вы уверены, что хотите удалить сервер «%1$s»?</string>
+    <string name="delete">Удалить</string>
+    <string name="cancel">Отмена</string>
+
+    <!-- ==================== Applications (Tunneling) Screen ==================== -->
+    <string name="search_apps_placeholder">Поиск по имени или пакету…</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_enabled">Включенные</string>
+    <string name="filter_disabled">Выключенные</string>
+
+    <!-- ==================== Settings Screen ==================== -->
+    <string name="settings_reconnect_warning">Внимание: изменения вступят в силу после переподключения.</string>
+    <string name="settings_view_logs">Журнал логов приложения</string>
+
+    <!-- Settings: Groups -->
+    <string name="settings_group_app">Настройки приложения</string>
+    <string name="settings_group_performance">Производительность и сеть</string>
+    <string name="settings_group_routing">Маршрутизация и безопасность</string>
+    <string name="settings_group_advanced">Тонкая настройка</string>
+
+    <!-- Settings: Items -->
+    <string name="settings_auto_start_title">Автозапуск VPN</string>
+    <string name="settings_auto_start_subtitle">Подключаться к последнему серверу при запуске.</string>
+
+    <string name="settings_fake_ip_title">FakeIP (ускорение DNS)</string>
+    <string name="settings_fake_ip_subtitle">Мгновенно возвращает фиктивный IP для DNS.</string>
+
+    <string name="settings_mux_title">Мультиплексирование (Mux)</string>
+    <string name="settings_mux_subtitle">Снижает задержку и экономит заряд батареи.</string>
+
+    <string name="settings_ipv6_title">Включить IPv6</string>
+    <string name="settings_ipv6_subtitle">Отключите для предотвращения возможной утечки IP.</string>
+
+    <string name="settings_strict_route_title">Строгая маршрутизация</string>
+    <string name="settings_strict_route_subtitle">Предотвращает утечку IP при смене сети.</string>
+
+    <string name="settings_adblock_title">Блокировка рекламы (geosite)</string>
+    <string name="settings_adblock_subtitle">Блокирует рекламу и трекеры на уровне DNS.</string>
+
+    <string name="settings_bypass_lan_title">Обход локальной сети (LAN)</string>
+    <string name="settings_bypass_lan_subtitle">Доступ к локальным устройствам без VPN.</string>
+
+    <string name="settings_allow_lan_title">Разрешить подключения из LAN</string>
+    <string name="settings_allow_lan_subtitle">Раздавать этот VPN через прокси на порту 10808.</string>
+
+    <!-- Settings: Advanced Tuning -->
+    <string name="settings_split_domains_label">Домены раздельного туннелирования</string>
+    <string name="settings_split_domains_hint">например, sberbank.com</string>
+    <string name="settings_custom_dns_label">Пользовательский DNS</string>
+    <string name="settings_custom_dns_hint">По умолчанию: 8.8.8.8</string>
+    <string name="settings_mtu_label">MTU</string>
+    <string name="settings_mtu_hint">Уменьшите при обрывах связи. По умолчанию: 1500</string>
+    <string name="settings_log_level_label">Уровень логирования</string>
+    <string name="settings_log_level_hint">Используйте \'DEBUG\' для диагностики.</string>
+
+    <!-- ==================== Logs Screen ==================== -->
+    <string name="logs_title">Логи (%1$d)</string>
+    <string name="share_logs">Поделиться</string>
+    <string name="logs_clip_label">Логи</string>
+    <string name="logs_copied">Скопировано</string>
+    <string name="logs_empty">Список логов пуст</string>
+
+    <!-- ==================== Dialogs, Permissions & Notifications ==================== -->
+    <string name="ok">ОК</string>
+    <string name="push_button_text">Отключить сервер</string>
+    <string name="shortcut_quick_connect">Быстрое подключение</string>
+    <string name="vpn_permission_required_title">Требуется разрешение</string>
+    <string name="vpn_permission_required_desc">Пожалуйста, сначала откройте приложение, чтобы выдать разрешение для VPN.</string>
+    <string name="permission_required_toast">Нажмите кнопку запуска, чтобы выдать необходимые разрешения</string>
+    <string name="permission_dialog_title">Требуется разрешение</string>
+    <string name="permission_dialog_desc">Вы попытались подключиться через виджет или ярлык, но системные разрешения отсутствуют.\n\nПожалуйста, нажмите кнопку запуска ниже, чтобы выдать необходимые разрешения.</string>
+    <string name="empty_server_dialog_title">Серверы не найдены</string>
+    <string name="empty_server_dialog_desc">У вас еще нет сохраненных VPN-серверов.\n\nПожалуйста, добавьте сервер в приложении перед подключением.</string>
+
+    <!-- ==================== Widgets ==================== -->
+    <string name="widget_connected">ПОДКЛЮЧЕНО</string>
+    <string name="widget_disconnected">ОТКЛЮЧЕНО</string>
+    <string name="widget_ready">ГОТОВ К ПОДКЛЮЧЕНИЮ</string>
+    <string name="widget_secure">ЗАЩИЩЕННОЕ СОЕДИНЕНИЕ АКТИВНО</string>
+    <string name="widget_download">↓ Загрузка</string>
+    <string name="widget_upload">↑ Отдача</string>
+    <string name="widget_zero_speed">0 Б/с</string>
+
+    <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_on">VPN: Вкл</string>
+    <string name="tile_secure">Защищено</string>
+    <string name="tile_vpn_off">VPN: Выкл</string>
+    <string name="tile_tap_to_connect">Нажмите для подключения</string>
+
+    <!-- ==================== Accessibility (Content Descriptions) ==================== -->
+    <string name="cd_power">Питание</string>
+    <string name="cd_ping_servers">Проверить пинг серверов</string>
+    <string name="cd_back">Назад</string>
+</resources>

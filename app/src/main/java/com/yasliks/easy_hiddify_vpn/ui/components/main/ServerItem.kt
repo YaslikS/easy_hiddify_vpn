@@ -1,58 +1,83 @@
 package com.yasliks.easy_hiddify_vpn.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yas.database.data.ServerDTO
 import com.yasliks.easy_hiddify_vpn.R
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ServerItem(
     server: ServerDTO,
     isSelected: Boolean,
     isCurrentConnected: Boolean,
     isVpnActive: Boolean,
-    isEditMode: Boolean,
     onConnectClick: () -> Unit,
     onEditClick: () -> Unit,
     onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    var itemSize by remember { mutableStateOf(IntSize.Zero) }
+    val offsetX = remember(server.id) { Animatable(0f) }
+    var showDeleteDialog by remember(server.id) { mutableStateOf(false) }
+
+    val currentConnected by rememberUpdatedState(isCurrentConnected)
+
     val initials = remember(server.name) {
         server.name.trim().take(2).uppercase().ifEmpty { "SV" }
     }
@@ -60,7 +85,7 @@ fun ServerItem(
     val onSurface = MaterialTheme.colorScheme.onSurface
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val primaryColor = MaterialTheme.colorScheme.primary
-    val errorContainerColor = MaterialTheme.colorScheme.errorContainer
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
     val secondaryContainerColor = MaterialTheme.colorScheme.secondaryContainer
     val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
     val onSecondaryContainerColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -85,16 +110,8 @@ fun ServerItem(
         label = "textColorSecondary",
     )
 
-    val itemBgColor = remember(
-        isEditMode,
-        isCurrentConnected,
-        isSelected,
-        isVpnActive,
-        errorContainerColor,
-        primaryColor
-    ) {
+    val itemBgColor = remember(isCurrentConnected, isSelected, isVpnActive, primaryColor) {
         when {
-            isEditMode -> errorContainerColor.copy(alpha = 0.2f)
             isCurrentConnected -> Color(0xFF4CAF50).copy(alpha = 0.2f)
             isSelected -> if (isVpnActive) Color.White.copy(alpha = 0.1f) else primaryColor.copy(
                 alpha = 0.15f
@@ -147,78 +164,264 @@ fun ServerItem(
         }
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(itemBgColor)
-            .combinedClickable(
-                onClick = { if (isEditMode) onEditClick() else onConnectClick() },
-                onLongClick = onLongClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(avatarBgColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = initials,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = avatarTextColor,
-            )
+    val isSwipingLeft by remember {
+        derivedStateOf { offsetX.value < -1f }
+    }
+    val isSwipingRight by remember {
+        derivedStateOf { offsetX.value > 1f }
+    }
+    val isSwiping = isSwipingLeft || isSwipingRight
+
+    val activeRowBgColor = remember(isSwiping, itemBgColor, isVpnActive, surfaceVariantColor) {
+        if (isSwiping && itemBgColor == Color.Transparent) {
+            if (isVpnActive) Color.White.copy(alpha = 0.08f) else surfaceVariantColor.copy(alpha = 0.5f)
+        } else {
+            itemBgColor
+        }
+    }
+
+    val rowShape = remember(isSwipingLeft, isSwipingRight) {
+        when {
+            isSwipingLeft -> RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+            isSwipingRight -> RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+            else -> RectangleShape
+        }
+    }
+
+    if (showDeleteDialog) {
+        val dismissDeleteDialog = {
+            showDeleteDialog = false
+            scope.launch {
+                offsetX.animateTo(
+                    targetValue = 0f,
+                    animationSpec = spring(),
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = server.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = textColorPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-
-                if (isCurrentConnected) {
-                    Spacer(modifier = Modifier.width(6.dp))
+        AlertDialog(
+            onDismissRequest = { dismissDeleteDialog() },
+            title = {
+                Text(text = stringResource(R.string.delete_server_dialog_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.delete_server_dialog_desc, server.name))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        scope.launch {
+                            val width = itemSize.width.toFloat()
+                            if (width > 0f) {
+                                offsetX.animateTo(
+                                    targetValue = -width,
+                                    animationSpec = tween(durationMillis = 180),
+                                )
+                            }
+                            onDeleteClick()
+                        }
+                    }
+                ) {
                     Text(
-                        text = stringResource(R.string.connected),
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                } else if (isSelected) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.selected_server),
-                        color = badgeColor,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(R.string.delete),
+                        color = errorColor,
                     )
                 }
+            },
+            dismissButton = {
+                TextButton(onClick = { dismissDeleteDialog() }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .onSizeChanged { itemSize = it }
+            .draggable(
+                orientation = Orientation.Horizontal,
+                state = rememberDraggableState { delta ->
+                    scope.launch {
+                        val maxSwipe = itemSize.width.toFloat().coerceAtLeast(1f)
+                        val maxRightSwipe = if (currentConnected) 0f else maxSwipe
+                        val newOffset = (offsetX.value + delta).coerceIn(-maxSwipe, maxRightSwipe)
+                        offsetX.snapTo(newOffset)
+                    }
+                },
+                onDragStopped = { velocity ->
+                    val width = itemSize.width.toFloat()
+                    if (width > 0f) {
+                        val shouldDelete = (-offsetX.value) > width * 0.3f || velocity < -1500f
+                        val shouldEdit =
+                            !currentConnected && (offsetX.value > width * 0.3f || velocity > 1500f)
+
+                        when {
+                            shouldDelete -> {
+                                val holdOffset =
+                                    -with(density) { 96.dp.toPx() }.coerceAtMost(width * 0.4f)
+                                offsetX.animateTo(
+                                    targetValue = holdOffset,
+                                    animationSpec = spring(),
+                                )
+                                showDeleteDialog = true
+                            }
+
+                            shouldEdit -> {
+                                onEditClick()
+                                offsetX.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(),
+                                )
+                            }
+
+                            else -> {
+                                offsetX.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(),
+                                )
+                            }
+                        }
+                    }
+                },
+            ),
+    ) {
+        if (isSwipingRight && !isCurrentConnected && itemSize.height > 0) {
+            val gapPx = with(density) { 8.dp.toPx() }
+            val startPaddingPx = with(density) { 6.dp.toPx() }
+            val pillWidthDp = with(density) {
+                (offsetX.value - gapPx - startPaddingPx).coerceAtLeast(0f).toDp()
             }
-            Spacer(modifier = Modifier.height(2.dp))
+            val pillHeightDp = with(density) {
+                (itemSize.height.toDp() - 8.dp).coerceAtLeast(0.dp)
+            }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            if (pillWidthDp > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 6.dp)
+                        .size(width = pillWidthDp, height = pillHeightDp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFF2196F3)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (pillWidthDp >= 28.dp) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        if (isSwipingLeft && itemSize.height > 0) {
+            val gapPx = with(density) { 8.dp.toPx() }
+            val endPaddingPx = with(density) { 6.dp.toPx() }
+            val pillWidthDp = with(density) {
+                ((-offsetX.value) - gapPx - endPaddingPx).coerceAtLeast(0f).toDp()
+            }
+            val pillHeightDp = with(density) {
+                (itemSize.height.toDp() - 8.dp).coerceAtLeast(0.dp)
+            }
+
+            if (pillWidthDp > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 6.dp)
+                        .size(width = pillWidthDp, height = pillHeightDp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFEF5350)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (pillWidthDp >= 28.dp) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .clip(rowShape)
+                .background(activeRowBgColor)
+                .clickable(onClick = onConnectClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(avatarBgColor),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = server.config,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 11.sp,
-                    color = textColorSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    text = initials,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = avatarTextColor,
                 )
+            }
 
-                if (!isEditMode) {
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = server.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+
+                    if (isCurrentConnected) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.connected),
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    } else if (isSelected) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.selected_server),
+                            color = badgeColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = server.config,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 11.sp,
+                        color = textColorSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when {
@@ -232,23 +435,9 @@ fun ServerItem(
                     )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-        if (isEditMode) {
-            IconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = errorColor,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        } else {
             IconButton(
                 onClick = onCopyClick,
                 modifier = Modifier.size(36.dp),
