@@ -1,4 +1,3 @@
-
 # 📱 EasyHiddify VPN
 
 [![Android Min SDK](https://img.shields.io/badge/Min%20SDK-26%2B-brightgreen.svg)](https://developer.android.com)
@@ -10,19 +9,31 @@
 
 **EasyHiddify VPN** is a demonstration Android application and reference client for working with the [`easy_hiddify_lib`](https://github.com/YaslikS/easy_hiddify_lib) library based on **Hiddify Core (Libbox / sing-box)**.
 
-The app demonstrates building a full-featured VPN client with a modern UI powered by **Jetpack Compose**, dependency management via **Hilt**, local storage with **Room**, and support for Split Tunneling.
+The app demonstrates building a full-featured VPN client with a modern UI powered by **Jetpack Compose**, dependency management via **Hilt**, local storage with **Room**, advanced routing capabilities, and support for Split Tunneling.
 
 ---
 
 ## ✨ Application Features
 
-- 🛡 **VPN Connection:**
-  - Starting and stopping connections via VLESS (REALITY, TLS, Flow), Shadowsocks, and JSON configurations.
-- 📱 **App Selection Management (Split Tunneling):**
-  - Automatic scanning of all installed applications on the device upon first launch.
+- 🛡 **VPN Connection & Server Management:**
+  - Starting and stopping connections via **VLESS** (REALITY, TLS, Flow), **Trojan**, **Shadowsocks**, and raw **JSON** configurations.
+  - Adding, editing, deleting, and copying multiple server configurations saved locally.
+- ⚙️ **Advanced Settings & Routing:**
+  - **AdBlock (geosite):** Blocks ads and trackers at the DNS level.
+  - **FakeIP:** Drastically accelerates DNS resolution for faster browsing.
+  - **Multiplexing (Mux):** Combines multiple connections to reduce latency and save battery.
+  - **LAN Proxy Share:** Opens a local HTTP/SOCKS5 proxy (port 10808) to share the VPN with other devices on your Wi-Fi.
+  - **Network Tuning:** Custom DNS, MTU settings, IPv6 toggling, Strict Route, and LAN Bypass.
+- 📱 **App Selection (Split Tunneling):**
+  - Automatic scanning of all installed applications on the device.
   - Passing the list of selected `packageName`s to the VPN service for traffic splitting.
+  - Custom direct domains bypassing the VPN (e.g., `*.ru`, `sberbank.com`).
+- 📝 **Diagnostics & Monitoring:**
+  - Real-time connection speed and total traffic usage display.
+  - Dedicated **Log Screen** to view and share core diagnostic logs in real-time.
 - 🎨 **Modern UI / UX:**
-  - Entirely built with **Jetpack Compose**.
+  - Entirely built with **Jetpack Compose** using Material Design 3 guidelines.
+  - Edge-to-edge support with nested `Scaffold` architecture.
   - Toggling UI element states is locked during an active VPN connection for safety.
 
 ---
@@ -40,10 +51,11 @@ easy_hiddify_vpn/
 
 ### Key Components:
 - **`MainApplication`** — entry point (`@HiltAndroidApp`), initializing the library `EasyHiddify.init(this)`.
-- **`MainScreen`** — main VPN control screen: start/stop, config input field, status indicator, traffic stats, and log console.
-- **`AppsScreen`** — split tunneling screen with a list of installed applications and toggles.
-- **`AppsViewModel`** — ViewModel containing business logic for searching, saving apps to Room, and collecting selected package lists.
-- **`AppsRepo` / `AppsDao` / `AppDB`** — data layer for working with the Room local database.
+- **`MainScreen` / `ServerViewModel`** — main VPN control screen: start/stop, traffic stats, and CRUD operations for your saved servers/configs.
+- **`AppsScreen` / `AppsViewModel`** — split tunneling screen with a searchable list of installed applications and toggles.
+- **`SettingsScreen`** — advanced VPN tuning UI interacting directly with `hiddify.settings`.
+- **`LogScreen`** — real-time console log viewer to debug connections.
+- **`AppsDao` / `ServerDao`** — data layer for working with the Room local database.
 
 ---
 
