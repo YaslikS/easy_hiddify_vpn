@@ -82,8 +82,10 @@
     <string name="settings_split_domains_hint">например, sberbank.com</string>
     <string name="settings_custom_dns_label">Пользовательский DNS</string>
     <string name="settings_custom_dns_hint">По умолчанию: 8.8.8.8</string>
+    <string name="settings_custom_dns_error">DNS не может быть пустым</string>
     <string name="settings_mtu_label">MTU</string>
     <string name="settings_mtu_hint">Уменьшите при обрывах связи. По умолчанию: 1500</string>
+    <string name="settings_mtu_error">Введите значение от 576 до 9000</string>
     <string name="settings_log_level_label">Уровень логирования</string>
     <string name="settings_log_level_hint">Используйте \'DEBUG\' для диагностики.</string>
 

@@ -56,17 +56,15 @@ import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
 import com.yasliks.easy_hiddify_vpn.ui.components.main.TrafficCard
 import com.yasliks.easy_hiddify_vpn.ui.components.main.VpnButton
-import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
-import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.hypot
 
 @Composable
 fun MainScreen(
-    appsViewModel: AppsViewModel,
     serverViewModel: ServerViewModel,
     hiddify: EasyHiddify,
+    onStartServer: (config: String, serverName: String, serverId: Int) -> Unit,
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -81,7 +79,6 @@ fun MainScreen(
 
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
     val serviceActiveServerId by hiddify.state.activeServerId.collectAsStateWithLifecycle()
-    val selectedApps by appsViewModel.selectedApps.collectAsStateWithLifecycle(initialValue = persistentListOf())
     val servers by serverViewModel.servers.collectAsStateWithLifecycle(initialValue = emptyList())
     val lastServerId by serverViewModel.lastServerId.collectAsStateWithLifecycle(initialValue = 0)
     val isPinging by serverViewModel.isPinging.collectAsStateWithLifecycle()
@@ -145,17 +142,9 @@ fun MainScreen(
         ?: effectiveSelectedId
     }
 
-    @SuppressLint("LocalContextGetResourceValueCall")
     val startHiddify = {
-        pendingConfig?.let {
-            hiddify.startVpn(
-                configStr = it,
-                serverName = pendingServerName,
-                serverId = pendingServerId ?: 0,
-                appsList = selectedApps,
-                isEnabledApps = true,
-                disconnectText = context.getString(R.string.push_button_text),
-            )
+        pendingConfig?.let { config ->
+            onStartServer(config, pendingServerName, pendingServerId ?: 0)
             activeServerId = pendingServerId
         }
     }

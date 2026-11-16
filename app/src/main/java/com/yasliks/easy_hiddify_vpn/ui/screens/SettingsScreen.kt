@@ -30,6 +30,8 @@ import com.yasliks.easy_hiddify_vpn.ui.components.base.TopBar
 import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
 import com.yasliks.easy_hiddify_vpn.vm.SettingsViewModel
 
+private val MTU_RANGE = 576..9000
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(
@@ -106,6 +108,9 @@ private fun SettingsListContent(
     var dnsInput by remember(dnsServer) { mutableStateOf(dnsServer) }
     var mtuInput by remember(mtu) { mutableStateOf(mtu.toString()) }
     var domainsInput by remember(customDirectDomains) { mutableStateOf(customDirectDomains) }
+
+    val dnsError = dnsInput.isBlank()
+    val mtuError = mtuInput.toIntOrNull()?.let { it !in MTU_RANGE } ?: true
 
     LazyColumn(modifier = modifier, contentPadding = contentPadding) {
         if (!isLandscapeMode) {
@@ -231,10 +236,18 @@ private fun SettingsListContent(
                 domainsInput = domainsInput,
                 onDomainsChange = { domainsInput = it; viewModel.setCustomDirectDomains(it) },
                 dnsInput = dnsInput,
-                onDnsChange = { dnsInput = it; viewModel.setDnsServer(it) },
+                dnsError = dnsError,
+                onDnsChange = {
+                    dnsInput = it
+                    if (it.isNotBlank()) viewModel.setDnsServer(it.trim())
+                },
                 mtuInput = mtuInput,
+                mtuError = mtuError,
                 onMtuChange = {
-                    mtuInput = it; it.toIntOrNull()?.let { validMtu -> viewModel.setMtu(validMtu) }
+                    mtuInput = it
+                    it.toIntOrNull()
+                        ?.takeIf { value -> value in MTU_RANGE }
+                        ?.let(viewModel::setMtu)
                 },
                 logLevel = logLevel,
                 onLogLevelChange = viewModel::setLogLevel,
@@ -247,8 +260,8 @@ private fun SettingsListContent(
 @Composable
 private fun AdvancedTuningGroup(
     domainsInput: String, onDomainsChange: (String) -> Unit,
-    dnsInput: String, onDnsChange: (String) -> Unit,
-    mtuInput: String, onMtuChange: (String) -> Unit,
+    dnsInput: String, dnsError: Boolean, onDnsChange: (String) -> Unit,
+    mtuInput: String, mtuError: Boolean, onMtuChange: (String) -> Unit,
     logLevel: String, onLogLevelChange: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -271,7 +284,15 @@ private fun AdvancedTuningGroup(
             value = dnsInput,
             onValueChange = onDnsChange,
             label = { Text(stringResource(R.string.settings_custom_dns_label)) },
-            supportingText = { Text(stringResource(R.string.settings_custom_dns_hint)) },
+            isError = dnsError,
+            supportingText = {
+                Text(
+                    stringResource(
+                        if (dnsError) R.string.settings_custom_dns_error
+                        else R.string.settings_custom_dns_hint,
+                    ),
+                )
+            },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(
@@ -284,7 +305,15 @@ private fun AdvancedTuningGroup(
             value = mtuInput,
             onValueChange = onMtuChange,
             label = { Text(stringResource(R.string.settings_mtu_label)) },
-            supportingText = { Text(stringResource(R.string.settings_mtu_hint)) },
+            isError = mtuError,
+            supportingText = {
+                Text(
+                    stringResource(
+                        if (mtuError) R.string.settings_mtu_error
+                        else R.string.settings_mtu_hint,
+                    ),
+                )
+            },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(

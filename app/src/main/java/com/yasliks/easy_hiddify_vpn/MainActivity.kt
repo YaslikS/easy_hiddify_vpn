@@ -243,9 +243,17 @@ class MainActivity : ComponentActivity() {
                         ) {
                             when (currentPage) {
                                 is AppRoute.Main -> MainScreen(
-                                    appsViewModel = appsViewModel,
                                     serverViewModel = serverViewModel,
                                     hiddify = hiddify,
+                                    onStartServer = { config, serverName, serverId ->
+                                        mainViewModel.startServer(
+                                            hiddify = hiddify,
+                                            config = config,
+                                            serverName = serverName,
+                                            serverId = serverId,
+                                            disconnectText = getString(R.string.push_button_text),
+                                        )
+                                    },
                                 )
 
                                 is AppRoute.Apps -> AppsScreen(hiddify, appsViewModel)

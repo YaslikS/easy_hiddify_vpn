@@ -84,8 +84,10 @@
     <string name="settings_split_domains_hint">e.g., sberbank.com</string>
     <string name="settings_custom_dns_label">Custom DNS</string>
     <string name="settings_custom_dns_hint">Default: 8.8.8.8</string>
+    <string name="settings_custom_dns_error">DNS cannot be empty</string>
     <string name="settings_mtu_label">MTU</string>
     <string name="settings_mtu_hint">Decrease if connection drops. Default: 1500</string>
+    <string name="settings_mtu_error">Enter a value from 576 to 9000</string>
     <string name="settings_log_level_label">Log Level</string>
     <string name="settings_log_level_hint">Use \'DEBUG\' for troubleshooting.</string>
 

@@ -82,8 +82,10 @@
     <string name="settings_split_domains_hint">例如：sberbank.com</string>
     <string name="settings_custom_dns_label">自定义 DNS</string>
     <string name="settings_custom_dns_hint">默认：8.8.8.8</string>
+    <string name="settings_custom_dns_error">DNS 不能为空</string>
     <string name="settings_mtu_label">MTU</string>
     <string name="settings_mtu_hint">若连接容易中断请调小。默认：1500</string>
+    <string name="settings_mtu_error">请输入 576 到 9000 之间的值</string>
     <string name="settings_log_level_label">日志级别</string>
     <string name="settings_log_level_hint">排查问题时请使用 \'DEBUG\'。</string>
 

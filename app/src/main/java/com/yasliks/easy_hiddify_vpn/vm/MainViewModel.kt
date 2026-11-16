@@ -3,10 +3,10 @@ package com.yasliks.easy_hiddify_vpn.vm
 import androidx.datastore.core.DataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.yas.database.repo.AppsRepo
-import com.yas.database.repo.ServerRepo
 import com.yasliks.database.data.SettingsData
 import com.yasliks.easy_hiddify_vpn.ui.components.base.AppRoute
+import com.yasliks.easy_hiddify_vpn.utils.StartVpnResult
+import com.yasliks.easy_hiddify_vpn.utils.VpnStarter
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val settings: DataStore<SettingsData>,
-    private val appsRepo: AppsRepo,
-    private val serverRepo: ServerRepo,
+    private val vpnStarter: VpnStarter,
 ) : ViewModel() {
 
     private val _currentRoute = MutableStateFlow(AppRoute.Main.route)
@@ -51,14 +50,12 @@ class MainViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val isConnected = hiddify.state.connected.value
-            val settingsData = settings.data.first()
+            val autoStartVpn = settings.data.first().autoStartVpn
 
-            if (!isConnected && settingsData.autoStartVpn && hasPermissions) {
-                startVpnIfPossible(
+            if (!isConnected && autoStartVpn && hasPermissions) {
+                vpnStarter.startLastServer(
                     hiddify = hiddify,
-                    lastServerId = settingsData.lastServerId,
                     disconnectText = disconnectText,
-                    showEmptyDialogIfNone = false,
                 )
             }
         }
@@ -70,55 +67,41 @@ class MainViewModel @Inject constructor(
         disconnectText: String,
     ) {
         viewModelScope.launch {
-            val isConnected = hiddify.state.connected.value
-
-            if (isConnected) {
+            if (hiddify.state.connected.value) {
                 hiddify.stopVpn()
-            } else {
-                if (!hasPermissions) {
-                    _showPermissionDialog.value = true
-                    return@launch
-                }
+                return@launch
+            }
 
-                val settingsData = settings.data.first()
-                startVpnIfPossible(
+            if (!hasPermissions) {
+                _showPermissionDialog.value = true
+                return@launch
+            }
+
+            if (vpnStarter.startLastServer(
                     hiddify = hiddify,
-                    lastServerId = settingsData.lastServerId,
                     disconnectText = disconnectText,
-                    showEmptyDialogIfNone = true,
-                )
+                ) is StartVpnResult.NoServers
+            ) {
+                _showEmptyServerDialog.value = true
             }
         }
     }
 
-    private suspend fun startVpnIfPossible(
+    fun startServer(
         hiddify: EasyHiddify,
-        lastServerId: Int,
+        config: String,
+        serverName: String,
+        serverId: Int,
         disconnectText: String,
-        showEmptyDialogIfNone: Boolean,
     ) {
-        val servers = serverRepo.getAll()
-        val targetServer = servers.find {
-            it.id == lastServerId
-        } ?: servers.firstOrNull()
-
-        if (targetServer != null) {
-            val selectedApps = appsRepo.getAll()
-                .filter { it.isSelected }
-                .map { it.packageName }
-
-            hiddify.startVpn(
-                configStr = targetServer.config,
-                serverName = targetServer.name,
-                serverId = targetServer.id,
-                appsList = selectedApps,
-                isEnabledApps = true,
+        viewModelScope.launch {
+            vpnStarter.startServer(
+                hiddify = hiddify,
+                config = config,
+                serverName = serverName,
+                serverId = serverId,
                 disconnectText = disconnectText,
             )
-        } else {
-            if (showEmptyDialogIfNone) {
-                _showEmptyServerDialog.value = true
-            }
         }
     }
 }

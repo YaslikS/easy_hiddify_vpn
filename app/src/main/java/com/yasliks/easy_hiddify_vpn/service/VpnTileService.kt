@@ -9,13 +9,11 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
-import androidx.datastore.core.DataStore
-import com.yas.database.repo.AppsRepo
-import com.yas.database.repo.ServerRepo
-import com.yasliks.database.data.SettingsData
 import com.yasliks.easy_hiddify_vpn.MainActivity
 import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
+import com.yasliks.easy_hiddify_vpn.utils.StartVpnResult
+import com.yasliks.easy_hiddify_vpn.utils.VpnStarter
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -32,13 +29,7 @@ import javax.inject.Inject
 class VpnTileService : TileService() {
 
     @Inject
-    lateinit var serverRepo: ServerRepo
-
-    @Inject
-    lateinit var appsRepo: AppsRepo
-
-    @Inject
-    lateinit var settings: DataStore<SettingsData>
+    lateinit var vpnStarter: VpnStarter
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var stateJob: Job? = null
@@ -132,26 +123,11 @@ class VpnTileService : TileService() {
             }
 
             serviceScope.launch {
-                val settingsData = settings.data.first()
-                val lastServerId = settingsData.lastServerId
-                val servers = serverRepo.getAll()
-                val targetServer = servers.find {
-                    it.id == lastServerId
-                } ?: servers.firstOrNull()
-
-                if (targetServer != null) {
-                    val selectedApps = appsRepo.getAll()
-                        .filter { it.isSelected }
-                        .map { it.packageName }
-                    hiddify.startVpn(
-                        configStr = targetServer.config,
-                        serverName = targetServer.name,
-                        serverId = targetServer.id,
-                        appsList = selectedApps,
-                        isEnabledApps = true,
-                        disconnectText = getString(R.string.push_button_text),
-                    )
-                } else {
+                val result = vpnStarter.startLastServer(
+                    hiddify = hiddify,
+                    disconnectText = getString(R.string.push_button_text),
+                )
+                if (result is StartVpnResult.NoServers) {
                     openMainActivity(reason = AppPrefs.EMPTY_SERVER)
                 }
             }
