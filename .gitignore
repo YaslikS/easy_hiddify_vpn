@@ -16,3 +16,8 @@ local.properties
 /easy_hiddify_lib/local.properties
 /app/src/main/java/com/yasliks/easy_hiddify_vpn/base/appfiles.txt
 /app/src/main/java/com/yasliks/easy_hiddify_vpn/files.txt
+
+# Release signing secrets (must never be committed)
+keystore.properties
+*.jks
+*.keystore

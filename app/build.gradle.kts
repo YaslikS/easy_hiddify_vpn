@@ -2,6 +2,7 @@ import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -10,6 +11,39 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidHilt)
 }
+
+// Release signing secrets live outside VCS: keystore.properties (gitignored)
+// or RELEASE_* environment variables in CI.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(property: String, environment: String): String? =
+    keystoreProperties.getProperty(property) ?: System.getenv(environment)
+
+val releaseStorePath = signingValue("storeFile", "RELEASE_STORE_FILE")
+
+val releaseSigningIssue: String? = when {
+    releaseStorePath == null ->
+        "keystore.properties not found and RELEASE_STORE_FILE is not set"
+    !rootProject.file(releaseStorePath).exists() ->
+        "keystore file not found: $releaseStorePath"
+    signingValue("storePassword", "RELEASE_STORE_PASSWORD") == null ->
+        "storePassword is not set"
+    signingValue("keyAlias", "RELEASE_KEY_ALIAS") == null ->
+        "keyAlias is not set"
+    signingValue("keyPassword", "RELEASE_KEY_PASSWORD") == null ->
+        "keyPassword is not set"
+    else -> null
+}
+
+// Android Studio's "Generate Signed App Bundle or APK" injects its own signing
+// properties, so a missing keystore.properties must not block that flow.
+val ideSigningInjected = project.hasProperty("android.injected.signing.store.file")
+val releaseSigningAvailable = releaseSigningIssue == null || ideSigningInjected
 
 android {
     namespace = "com.yasliks.easy_hiddify_vpn"
@@ -47,10 +81,19 @@ android {
     signingConfigs {
         getByName("debug") { }
         create("release") {
-            storeFile = file("key.jks")
-            keyAlias = "easy_key"
-            storePassword = "f4wv435c"
-            keyPassword = "f4wv435c"
+            if (releaseSigningIssue == null) {
+                storeFile = rootProject.file(requireNotNull(releaseStorePath))
+                storePassword = signingValue("storePassword", "RELEASE_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "RELEASE_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "RELEASE_KEY_PASSWORD")
+            } else if (!ideSigningInjected) {
+                // Keep the signing config non-empty so packaging fails loudly
+                // instead of silently producing an unsigned release APK.
+                // This is configuration-cache safe (no task actions/script refs).
+                storeFile = rootProject.file(
+                    "MISSING_RELEASE_KEYSTORE__see_keystore.properties.example",
+                )
+            }
         }
     }
 
@@ -89,6 +132,20 @@ android {
             isMinifyEnabled = false
         }
     }
+}
+
+val releasePackagingRequested = gradle.startParameter.taskNames.any { task ->
+    val name = task.substringAfterLast(':')
+    (name.startsWith("assemble") || name.startsWith("bundle") || name.startsWith("package")) &&
+        name.contains("Release", ignoreCase = true)
+}
+
+if (releasePackagingRequested && !releaseSigningAvailable) {
+    error(
+        "Release signing is not configured: $releaseSigningIssue. " +
+            "Create keystore.properties in the project root (see keystore.properties.example) " +
+            "or set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD.",
+    )
 }
 
 kotlin {
