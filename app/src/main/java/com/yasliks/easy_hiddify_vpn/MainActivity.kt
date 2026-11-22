@@ -1,20 +1,16 @@
 package com.yasliks.easy_hiddify_vpn
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.VpnService
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.core.content.ContextCompat
 import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
 import com.yasliks.easy_hiddify_vpn.ui.AppContent
 import com.yasliks.easy_hiddify_vpn.utils.ImportDeepLinkParser
+import com.yasliks.easy_hiddify_vpn.utils.hasVpnStartPermissions
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.easy_hiddify_vpn.vm.ImportViewModel
 import com.yasliks.easy_hiddify_vpn.vm.MainViewModel
@@ -36,14 +32,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent?.action == AppPrefs.RECEIVER_QUICK_CONNECT) {
+            if (savedInstanceState == null) launchQuickConnect()
+            finish()
+            return
+        }
         enableEdgeToEdge()
 
         if (savedInstanceState == null) {
             handleIntent(intent = intent)
-            if (intent?.action != AppPrefs.RECEIVER_QUICK_CONNECT && intent?.action != Intent.ACTION_VIEW) {
+            if (intent?.action != Intent.ACTION_VIEW) {
                 mainViewModel.checkAutoStart(
                     hiddify = hiddify,
-                    hasPermissions = hasRequiredPermissions(),
+                    hasPermissions = hasVpnStartPermissions(),
                     disconnectText = getString(R.string.push_button_text),
                 )
             }
@@ -64,16 +65,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent = intent)
+        if (intent.action == AppPrefs.RECEIVER_QUICK_CONNECT) {
+            launchQuickConnect()
+        } else {
+            handleIntent(intent = intent)
+        }
     }
 
-    private fun hasRequiredPermissions(): Boolean =
-        VpnService.prepare(this) == null &&
-            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED)
+    private fun launchQuickConnect() {
+        startActivity(
+            Intent(this, QuickConnectActivity::class.java).apply {
+                action = AppPrefs.RECEIVER_QUICK_CONNECT
+            },
+        )
+    }
 
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
@@ -93,13 +98,6 @@ class MainActivity : ComponentActivity() {
         if (intent.getBooleanExtra(AppPrefs.EMPTY_SERVER_DIALOG, false)) {
             mainViewModel.setShowEmptyServerDialog(show = true)
             intent.removeExtra(AppPrefs.EMPTY_SERVER_DIALOG)
-        }
-        if (intent.action == AppPrefs.RECEIVER_QUICK_CONNECT) {
-            mainViewModel.handleQuickConnect(
-                hiddify = hiddify,
-                hasPermissions = hasRequiredPermissions(),
-                disconnectText = getString(R.string.push_button_text),
-            )
         }
     }
 

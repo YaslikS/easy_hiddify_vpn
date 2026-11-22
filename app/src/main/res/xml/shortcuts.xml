@@ -9,7 +9,7 @@
 
         <intent
             android:action="com.yasliks.easy_hiddify_vpn.QUICK_CONNECT"
-            android:targetClass="com.yasliks.easy_hiddify_vpn.MainActivity"
+            android:targetClass="com.yasliks.easy_hiddify_vpn.QuickConnectActivity"
             android:targetPackage="com.yasliks.easy_hiddify_vpn" />
 
     </shortcut>

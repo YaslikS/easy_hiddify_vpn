@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.Easy_hiddify_vpn" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Easy_hiddify_vpn.QuickConnect" parent="Theme.Easy_hiddify_vpn">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

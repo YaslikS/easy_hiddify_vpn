@@ -61,32 +61,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun handleQuickConnect(
-        hiddify: EasyHiddify,
-        hasPermissions: Boolean,
-        disconnectText: String,
-    ) {
-        viewModelScope.launch {
-            if (hiddify.state.connected.value) {
-                hiddify.stopVpn()
-                return@launch
-            }
-
-            if (!hasPermissions) {
-                _showPermissionDialog.value = true
-                return@launch
-            }
-
-            if (vpnStarter.startLastServer(
-                    hiddify = hiddify,
-                    disconnectText = disconnectText,
-                ) is StartVpnResult.NoServers
-            ) {
-                _showEmptyServerDialog.value = true
-            }
-        }
-    }
-
     fun startServer(
         hiddify: EasyHiddify,
         config: String,
