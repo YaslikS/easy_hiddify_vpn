@@ -61,6 +61,33 @@ easy_hiddify_vpn/
 
 ## 🛠 Cloning and Building the Project
 
+### Importing servers and subscriptions
+
+Choose **Add → Import servers** on the main screen to paste a server URI, a newline-separated
+list (plain text or Base64), or an HTTPS subscription URL. Select a saved
+subscription in the same dialog to fetch an update. Saving a preview replaces
+only that subscription's list; a failed or empty download leaves it intact.
+Deleting a subscription also deletes its servers. Expiration is shown when the
+subscription response provides `expire` in the `Subscription-Userinfo` header.
+Supported links: `vless://`, `trojan://`, `ss://`, `hysteria2://`, `hy2://`.
+Hysteria2 certificate pinning and port hopping are not supported.
+
+The server test measures an HTTPS request to `www.gstatic.com/generate_204`
+through each proxy, not a direct TCP connection to the server. New tests reset
+previous results and check up to ten URI profiles at once. Tap the test button
+again to cancel. Raw JSON profiles are checked separately; the test
+requires a supported proxy as the default outbound, not a selector or group.
+
+Android deep links open an import preview flow, without automatically connecting:
+
+| Type | Link format |
+| --- | --- |
+| Single server | `easyhiddify://import/server?data=<percent-encoded URI>` |
+| Server list | `easyhiddify://import/servers?data=<percent-encoded text or Base64>` |
+| Subscription | `easyhiddify://import/subscription?url=<percent-encoded HTTPS URL>` |
+
+For example: `easyhiddify://import/subscription?url=https%3A%2F%2Fexample.org%2Fservers.txt`.
+
 Since the `easy_hiddify_lib` library module is linked to the project as a **Git Submodule**, clone the project using the recursive flag `--recursive`:
 
 ```bash
