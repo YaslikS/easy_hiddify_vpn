@@ -1,8 +1,8 @@
 package com.yasliks.easy_hiddify_vpn.ui.screens
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.VpnService
@@ -16,6 +16,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -33,41 +36,64 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yas.database.data.ServerDTO
+import com.yas.database.data.SubscriptionDTO
 import com.yasliks.easy_hiddify_vpn.R
-import com.yasliks.easy_hiddify_vpn.ui.components.ServerItem
+import com.yasliks.easy_hiddify_vpn.ui.components.main.ServerItem
+import com.yasliks.easy_hiddify_vpn.ui.components.main.ServerItemActions
 import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
+import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanel
+import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanelColor
 import com.yasliks.easy_hiddify_vpn.ui.components.main.TrafficCard
 import com.yasliks.easy_hiddify_vpn.ui.components.main.VpnButton
+import com.yasliks.easy_hiddify_vpn.ui.components.main.SwipeActionRow
+import com.yasliks.easy_hiddify_vpn.ui.components.main.subscriptionRemainingLabel
+import com.yasliks.easy_hiddify_vpn.ui.components.main.rememberSubscriptionTime
 import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
+import com.yasliks.easy_hiddify_vpn.utils.SubscriptionDownload
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import kotlin.math.hypot
+import kotlinx.coroutines.launch
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableSet
 
 @Composable
 fun MainScreen(
     serverViewModel: ServerViewModel,
     hiddify: EasyHiddify,
+    onImportClick: () -> Unit,
+    onRefreshSubscription: (String) -> Unit,
+    onDeleteSubscription: (String) -> Unit,
     onStartServer: (config: String, serverName: String, serverId: Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    val startServer by rememberUpdatedState(newValue = onStartServer)
 
     var pendingConfig by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingServerName by rememberSaveable { mutableStateOf("") }
@@ -75,16 +101,42 @@ fun MainScreen(
     var activeServerId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     var showServerSheet by rememberSaveable { mutableStateOf(false) }
+    var collapsedServerGroups by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+    val toggleServerGroup: (String) -> Unit = remember {
+        { key ->
+            collapsedServerGroups = ArrayList(
+                if (key in collapsedServerGroups) collapsedServerGroups - key else collapsedServerGroups + key,
+            )
+        }
+    }
     var serverToEdit by remember { mutableStateOf<ServerDTO?>(null) }
 
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
     val serviceActiveServerId by hiddify.state.activeServerId.collectAsStateWithLifecycle()
-    val servers by serverViewModel.servers.collectAsStateWithLifecycle(initialValue = emptyList())
+    val serviceActiveServerName by hiddify.state.activeServerName.collectAsStateWithLifecycle()
+    val servers by serverViewModel.servers.collectAsStateWithLifecycle(initialValue = persistentListOf())
+    val subscriptions by serverViewModel.subscriptions.collectAsStateWithLifecycle(initialValue = persistentListOf())
     val lastServerId by serverViewModel.lastServerId.collectAsStateWithLifecycle(initialValue = 0)
     val isPinging by serverViewModel.isPinging.collectAsStateWithLifecycle()
+    val pingingServerIds by serverViewModel.pingingServerIds.collectAsStateWithLifecycle()
 
     val effectiveSelectedId = remember(servers, lastServerId) {
         if (servers.any { it.id == lastServerId }) lastServerId else servers.firstOrNull()?.id ?: 0
+    }
+    val displayedServerName = remember(
+        isConnected,
+        serviceActiveServerId,
+        serviceActiveServerName,
+        activeServerId,
+        effectiveSelectedId,
+        servers,
+    ) {
+        if (isConnected) {
+            servers.firstOrNull { it.id == (serviceActiveServerId ?: activeServerId) }?.name
+                ?: serviceActiveServerName.takeIf { it.isNotBlank() }
+        } else {
+            servers.firstOrNull { it.id == effectiveSelectedId }?.name
+        }
     }
 
     val configuration = LocalConfiguration.current
@@ -111,30 +163,25 @@ fun MainScreen(
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
 
-    val targetMainTextColor = remember(isConnected, onSurfaceColor) {
-        if (isConnected) Color.White else onSurfaceColor
-    }
-    val targetSubTextColor = remember(isConnected, onSurfaceVariantColor) {
-        if (isConnected) Color.White.copy(alpha = 0.8f) else onSurfaceVariantColor
-    }
-    val targetButtonContentColor = remember(isConnected, primaryColor) {
-        if (isConnected) Color.White else primaryColor
-    }
-    val targetButtonBorderColor = remember(isConnected, outlineColor) {
-        if (isConnected) Color.White.copy(alpha = 0.5f) else outlineColor
-    }
-
-    val mainTextColor by animateColorAsState(targetMainTextColor, tween(1000), label = "mainText")
-    val subTextColor by animateColorAsState(targetSubTextColor, tween(1000), label = "subText")
+    val mainTextColor by animateColorAsState(
+        targetValue = if (isConnected) Color.White else onSurfaceColor,
+        animationSpec = tween(durationMillis = 1000),
+        label = "mainText",
+    )
+    val subTextColor by animateColorAsState(
+        targetValue = if (isConnected) Color.White.copy(alpha = 0.8f) else onSurfaceVariantColor,
+        animationSpec = tween(durationMillis = 1000),
+        label = "subText",
+    )
     val buttonContentColor by animateColorAsState(
-        targetButtonContentColor,
-        tween(1000),
-        label = "btnContent"
+        targetValue = if (isConnected) Color.White else primaryColor,
+        animationSpec = tween(durationMillis = 1000),
+        label = "btnContent",
     )
     val buttonBorderColor by animateColorAsState(
-        targetButtonBorderColor,
-        tween(1000),
-        label = "btnBorder"
+        targetValue = if (isConnected) Color.White.copy(alpha = 0.5f) else outlineColor,
+        animationSpec = tween(durationMillis = 1000),
+        label = "btnBorder",
     )
 
     LaunchedEffect(isConnected, serviceActiveServerId) {
@@ -142,10 +189,15 @@ fun MainScreen(
         ?: effectiveSelectedId
     }
 
-    val startHiddify = {
-        pendingConfig?.let { config ->
-            onStartServer(config, pendingServerName, pendingServerId ?: 0)
-            activeServerId = pendingServerId
+    val startHiddify: () -> Unit = remember {
+        {
+            pendingConfig?.let { config ->
+                startServer(
+                    config,
+                    pendingServerName,
+                    pendingServerId ?: 0,
+                )
+            }
         }
     }
 
@@ -154,9 +206,11 @@ fun MainScreen(
             if (result.resultCode == Activity.RESULT_OK) startHiddify()
         }
 
-    val checkVpnPermissionAndStart = {
-        val intent = VpnService.prepare(context)
-        if (intent != null) vpnPermissionLauncher.launch(intent) else startHiddify()
+    val checkVpnPermissionAndStart: () -> Unit = remember(context, vpnPermissionLauncher, startHiddify) {
+        {
+            val intent = VpnService.prepare(context)
+            if (intent != null) vpnPermissionLauncher.launch(input = intent) else startHiddify()
+        }
     }
 
     val notificationPermissionLauncher =
@@ -164,37 +218,53 @@ fun MainScreen(
             checkVpnPermissionAndStart()
         }
 
-    val handleStartClick = { config: String, serverName: String, serverId: Int? ->
-        pendingConfig = config
-        pendingServerName = serverName
-        pendingServerId = serverId
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
+    val handleStartClick: (ServerDTO) -> Unit = remember(
+        context,
+        serverViewModel,
+        notificationPermissionLauncher,
+        checkVpnPermissionAndStart,
+    ) {
+        { server ->
+            serverViewModel.setLastServerId(id = server.id)
+            pendingConfig = server.config
+            pendingServerName = server.name
+            pendingServerId = server.id
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
                     context,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    Manifest.permission.POST_NOTIFICATIONS,
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                notificationPermissionLauncher.launch(input = Manifest.permission.POST_NOTIFICATIONS)
             } else checkVpnPermissionAndStart()
-        } else checkVpnPermissionAndStart()
+        }
     }
 
-    val onToggleVpnClick = {
-        if (isConnected) {
-            hiddify.stopVpn()
-            activeServerId = null
-        } else {
-            val targetServer = servers.find { it.id == effectiveSelectedId }
-            if (targetServer != null) {
-                serverViewModel.setLastServerId(targetServer.id)
-                handleStartClick(targetServer.config, targetServer.name, targetServer.id)
+    val emptyServersText = stringResource(id = R.string.list_servers_empty)
+    val onToggleVpnClick: () -> Unit = remember(
+        isConnected,
+        hiddify,
+        servers,
+        effectiveSelectedId,
+        handleStartClick,
+        context,
+        emptyServersText,
+    ) {
+        {
+            if (isConnected) {
+                hiddify.stopVpn()
+                activeServerId = null
             } else {
-                @SuppressLint("LocalContextGetResourceValueCall")
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.list_servers_empty),
-                    Toast.LENGTH_SHORT
-                ).show()
+                val targetServer = servers.firstOrNull { it.id == effectiveSelectedId }
+                if (targetServer != null) {
+                    handleStartClick(targetServer)
+                } else {
+                    Toast.makeText(
+                        context,
+                        emptyServersText,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
             }
         }
     }
@@ -221,85 +291,25 @@ fun MainScreen(
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp)
             ) {
-                if (isLandscape) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(.4f)
-                                .fillMaxHeight()
-                                .verticalScroll(rememberScrollState()),
-                        ) {
-                            VpnControlSection(
-                                isConnected = isConnected,
-                                subTextColor = subTextColor,
-                                onToggleClick = { onToggleVpnClick.invoke() },
-                                onButtonPositioned = { buttonCenterInRoot = it }
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TrafficSection(hiddify = hiddify, isConnected = isConnected)
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                        Column(modifier = Modifier.weight(.6f).fillMaxHeight()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ServersHeaderSection(
-                                hasServers = servers.isNotEmpty(),
-                                isPinging = isPinging,
-                                mainTextColor = mainTextColor,
-                                buttonBorderColor = buttonBorderColor,
-                                buttonContentColor = buttonContentColor,
-                                onPingClick = serverViewModel::pingAllServers,
-                                onAddServerClick = { serverToEdit = null; showServerSheet = true }
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ServersListSection(
-                                servers = servers,
-                                effectiveSelectedId = effectiveSelectedId,
-                                activeServerId = activeServerId,
-                                isConnected = isConnected,
-                                onConnectClick = { server ->
-                                    serverViewModel.setLastServerId(server.id)
-                                    handleStartClick(server.config, server.name, server.id)
-                                },
-                                onEditClick = { server ->
-                                    serverToEdit = server; showServerSheet = true
-                                },
-                                onCopyClick = { server ->
-                                    clipboardManager.setText(AnnotatedString(server.config))
-                                    @SuppressLint("LocalContextGetResourceValueCall")
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.config_copied),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                onDeleteClick = { server ->
-                                    if (isConnected && activeServerId == server.id) {
-                                        hiddify.stopVpn(); activeServerId = null
-                                    }
-                                    if (server.id == effectiveSelectedId) {
-                                        serverViewModel.setLastServerId(
-                                            servers.firstOrNull { it.id != server.id }?.id ?: 0
-                                        )
-                                    }
-                                    serverViewModel.remove(server)
-                                },
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                        }
-                    }
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
+                MainScreenLayout(
+                    isLandscape = isLandscape,
+                    controls = {
                         VpnControlSection(
                             isConnected = isConnected,
+                            serverName = displayedServerName,
                             subTextColor = subTextColor,
-                            onToggleClick = { onToggleVpnClick.invoke() },
-                            onButtonPositioned = { buttonCenterInRoot = it }
+                            onToggleClick = onToggleVpnClick,
+                            onButtonPositioned = { buttonCenterInRoot = it },
                         )
-                        TrafficSection(hiddify = hiddify, isConnected = isConnected)
+                        if (isLandscape) Spacer(modifier = Modifier.height(8.dp))
+                        TrafficSection(
+                            hiddify = hiddify,
+                            isConnected = isConnected,
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
+                    },
+                    servers = {
+                        if (isLandscape) Spacer(modifier = Modifier.height(8.dp))
                         ServersHeaderSection(
                             hasServers = servers.isNotEmpty(),
                             isPinging = isPinging,
@@ -307,64 +317,83 @@ fun MainScreen(
                             buttonBorderColor = buttonBorderColor,
                             buttonContentColor = buttonContentColor,
                             onPingClick = serverViewModel::pingAllServers,
-                            onAddServerClick = { serverToEdit = null; showServerSheet = true }
+                            onImportClick = onImportClick,
+                            onAddServerClick = {
+                                serverToEdit = null
+                                showServerSheet = true
+                            },
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ServersListSection(
                             servers = servers,
+                            subscriptions = subscriptions,
+                            collapsedGroups = remember(collapsedServerGroups) { collapsedServerGroups.toImmutableSet() },
+                            onToggleGroup = toggleServerGroup,
+                            onRefreshSubscription = onRefreshSubscription,
+                            onDeleteSubscription = onDeleteSubscription,
+                            pingingServerIds = pingingServerIds,
                             effectiveSelectedId = effectiveSelectedId,
                             activeServerId = activeServerId,
                             isConnected = isConnected,
                             onConnectClick = { server ->
-                                serverViewModel.setLastServerId(server.id)
-                                handleStartClick(server.config, server.name, server.id)
+                                if (!isConnected || server.id != (serviceActiveServerId ?: activeServerId)) {
+                                    handleStartClick(server)
+                                }
                             },
                             onEditClick = { server ->
-                                serverToEdit = server; showServerSheet = true
+                                serverToEdit = server
+                                showServerSheet = true
                             },
                             onCopyClick = { server ->
-                                clipboardManager.setText(AnnotatedString(server.config))
-                                @SuppressLint("LocalContextGetResourceValueCall")
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.config_copied),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                scope.launch {
+                                    clipboard.setClipEntry(clipEntry = ClipEntry(ClipData.newPlainText(null, server.config)))
+                                    Toast.makeText(
+                                        context,
+                                        R.string.config_copied,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
                             },
                             onDeleteClick = { server ->
                                 if (isConnected && activeServerId == server.id) {
-                                    hiddify.stopVpn(); activeServerId = null
+                                    hiddify.stopVpn()
+                                    activeServerId = null
                                 }
                                 if (server.id == effectiveSelectedId) {
                                     serverViewModel.setLastServerId(
-                                        servers.firstOrNull { it.id != server.id }?.id ?: 0
+                                        id = servers.firstOrNull { it.id != server.id }?.id ?: 0,
                                     )
                                 }
-                                serverViewModel.remove(server)
+                                serverViewModel.remove(server = server)
                             },
-                            modifier = Modifier.weight(1f, fill = false)
+                            modifier = Modifier.weight(weight = 1f, fill = false),
                         )
-                    }
-                }
+                    },
+                )
             }
 
             if (showServerSheet) {
                 ServerBottomSheet(
                     serverToEdit = serverToEdit,
-                    onDismiss = { showServerSheet = false; serverToEdit = null },
+                    onDismiss = {
+                        showServerSheet = false
+                        serverToEdit = null
+                    },
                     onSave = { name, config ->
-                        if (serverToEdit != null) {
+                        val editedServer = serverToEdit
+                        if (editedServer != null) {
                             serverViewModel.update(
-                                serverToEdit!!.copy(
+                                server = editedServer.copy(
                                     name = name,
-                                    config = config
-                                )
+                                    config = config,
+                                ),
                             )
                         } else {
-                            serverViewModel.insert(config, name)
+                            serverViewModel.insert(config = config, name = name)
                         }
-                        showServerSheet = false; serverToEdit = null
-                    }
+                        showServerSheet = false
+                        serverToEdit = null
+                    },
                 )
             }
         }
@@ -372,8 +401,38 @@ fun MainScreen(
 }
 
 @Composable
+private fun MainScreenLayout(
+    isLandscape: Boolean,
+    controls: @Composable () -> Unit,
+    servers: @Composable ColumnScope.() -> Unit,
+) {
+    if (isLandscape) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(space = 24.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(weight = 0.4f)
+                    .fillMaxHeight()
+                    .verticalScroll(state = rememberScrollState()),
+            ) { controls() }
+            Column(
+                modifier = Modifier.weight(weight = 0.6f).fillMaxHeight(),
+                content = servers,
+            )
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            controls()
+            servers()
+        }
+    }
+}
+
+@Composable
 private fun VpnControlSection(
     isConnected: Boolean,
+    serverName: String?,
     subTextColor: Color,
     onToggleClick: () -> Unit,
     onButtonPositioned: (Offset) -> Unit
@@ -384,20 +443,39 @@ private fun VpnControlSection(
             .padding(top = 6.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        VpnButton(
-            isConnected = isConnected,
-            onClick = onToggleClick,
-            modifier = Modifier.onGloballyPositioned { coordinates ->
-                val pos = coordinates.positionInRoot()
-                val size = coordinates.size
-                onButtonPositioned(
-                    Offset(
-                        x = pos.x + size.width / 2f,
-                        y = pos.y + size.height / 2f
-                    )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (serverName != null) {
+                Text(
+                    text = serverName,
+                    modifier = Modifier.weight(1f, fill = false)
+                        .widthIn(max = 180.dp)
+                        .padding(end = 8.dp),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = subTextColor,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-        )
+            VpnButton(
+                isConnected = isConnected,
+                onClick = onToggleClick,
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    val pos = coordinates.positionInRoot()
+                    val size = coordinates.size
+                    onButtonPositioned(
+                        Offset(
+                            x = pos.x + size.width / 2f,
+                            y = pos.y + size.height / 2f,
+                        ),
+                    )
+                },
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = if (isConnected) stringResource(R.string.status_secure) else stringResource(R.string.status_ready),
@@ -449,17 +527,23 @@ private fun ServersHeaderSection(
     buttonBorderColor: Color,
     buttonContentColor: Color,
     onPingClick: () -> Unit,
+    onImportClick: () -> Unit,
     onAddServerClick: () -> Unit
 ) {
+    var showAddMenu by remember { mutableStateOf(false) }
+    val cancelPingDescription = stringResource(id = R.string.cancel)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.saved_ervers),
+                text = stringResource(id = R.string.servers_and_subscriptions),
                 style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
                 fontWeight = FontWeight.Bold,
                 color = mainTextColor
             )
@@ -468,12 +552,13 @@ private fun ServersHeaderSection(
                 Spacer(modifier = Modifier.width(6.dp))
                 IconButton(
                     onClick = onPingClick,
-                    enabled = !isPinging,
                     modifier = Modifier.size(28.dp)
                 ) {
                     if (isPinging) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(16.dp).semantics {
+                                contentDescription = cancelPingDescription
+                            },
                             color = mainTextColor,
                             strokeWidth = 2.dp
                         )
@@ -489,27 +574,54 @@ private fun ServersHeaderSection(
             }
         }
 
-        OutlinedButton(
-            onClick = onAddServerClick,
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-            modifier = Modifier.height(32.dp),
-            border = BorderStroke(1.dp, buttonBorderColor),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonContentColor)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.add), fontSize = 12.sp)
+        Box {
+            OutlinedButton(
+                onClick = { showAddMenu = true },
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp),
+                border = BorderStroke(width = 1.dp, color = buttonBorderColor),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonContentColor),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = stringResource(id = R.string.add), fontSize = 12.sp, maxLines = 1)
+            }
+            DropdownMenu(
+                expanded = showAddMenu,
+                onDismissRequest = { showAddMenu = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(id = R.string.import_menu_server)) },
+                    onClick = {
+                        showAddMenu = false
+                        onAddServerClick()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(id = R.string.import_servers)) },
+                    onClick = {
+                        showAddMenu = false
+                        onImportClick()
+                    },
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun ServersListSection(
-    servers: List<ServerDTO>,
+    servers: ImmutableList<ServerDTO>,
+    subscriptions: ImmutableList<SubscriptionDTO>,
+    collapsedGroups: ImmutableSet<String>,
+    onToggleGroup: (String) -> Unit,
+    onRefreshSubscription: (String) -> Unit,
+    onDeleteSubscription: (String) -> Unit,
+    pingingServerIds: ImmutableSet<Int>,
     effectiveSelectedId: Int,
     activeServerId: Int?,
     isConnected: Boolean,
@@ -519,35 +631,174 @@ private fun ServersListSection(
     onDeleteClick: (ServerDTO) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val groups = remember(servers) {
+        servers.groupBy { it.subscriptionUrlNotNull }.entries.sortedBy { it.key.isNotEmpty() }
+    }
+    val titles = remember(subscriptions) {
+        subscriptions.associate {
+            it.url to (it.titleNotNull.takeIf { title -> title.isNotEmpty() } ?: SubscriptionDownload.fallbackTitle(url = it.url))
+        }
+    }
+    val expirationByUrl = remember(subscriptions) {
+        subscriptions.filter { it.expiresAtNotNull > 0 }.associate { it.url to it.expiresAtNotNull }
+    }
+    val now by rememberSubscriptionTime(active = expirationByUrl.isNotEmpty())
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (isConnected) Color.White.copy(alpha = 0.05f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-            ),
-        contentPadding = PaddingValues(0.dp)
+            .padding(bottom = 12.dp),
     ) {
-        itemsIndexed(
-            items = servers,
-            key = { _, server -> server.id },
-        ) { index, server ->
-            ServerItem(
-                server = server,
-                isSelected = server.id == effectiveSelectedId,
-                isCurrentConnected = isConnected && activeServerId == server.id,
-                isVpnActive = isConnected,
-                onConnectClick = { onConnectClick(server) },
-                onEditClick = { onEditClick(server) },
-                onCopyClick = { onCopyClick(server) },
-                onDeleteClick = { onDeleteClick(server) },
-            )
-
-            if (index < servers.lastIndex) {
-                BaseHorizontalDivider()
+        groups.forEachIndexed { groupIndex, (url, group) ->
+            val groupKey = "group:$url"
+            val expanded = groupKey !in collapsedGroups
+            item(key = groupKey) {
+                Column(modifier = Modifier.animateItem()) {
+                    if (groupIndex > 0 &&
+                        "group:${groups[groupIndex - 1].key}" in collapsedGroups
+                    ) {
+                        BaseHorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            color = if (isConnected) Color.White.copy(alpha = 0.55f)
+                            else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                            thickness = 1f,
+                        )
+                    }
+                    SwipeActionRow(
+                        isConnected = isConnected,
+                        primaryActionIcon = Icons.Outlined.Refresh,
+                        onPrimaryAction = { onRefreshSubscription(url) },
+                        onDelete = { onDeleteSubscription(url) },
+                        deleteTitle = stringResource(id = R.string.import_delete_subscription),
+                        deleteMessage = stringResource(id = R.string.import_delete_subscription_message),
+                        enabled = url.isNotEmpty(),
+                        restingShape = RoundedCornerShape(12.dp),
+                    ) {
+                        ServerGroupHeader(
+                            title = if (url.isEmpty()) {
+                                stringResource(id = R.string.servers_added)
+                            } else {
+                                titles[url] ?: SubscriptionDownload.fallbackTitle(url = url)
+                                    ?: stringResource(id = R.string.servers_subscription)
+                            },
+                            expiresAt = expirationByUrl[url] ?: 0L,
+                            now = if (url in expirationByUrl) now else 0L,
+                            expanded = expanded,
+                            isConnected = isConnected,
+                            onToggle = { onToggleGroup(groupKey) },
+                            onRefresh = { onRefreshSubscription(url) },
+                        )
+                    }
+                }
+            }
+            if (!expanded) return@forEachIndexed
+            itemsIndexed(
+                items = group,
+                key = { _, server -> server.id },
+            ) { index, server ->
+                Column(
+                    modifier = Modifier
+                        .animateItem(
+                            fadeInSpec = tween(durationMillis = 220),
+                            fadeOutSpec = tween(durationMillis = 150),
+                        )
+                        .listPanel(
+                            color = if (isConnected) Color.White.copy(alpha = 0.05f)
+                            else MaterialTheme.colorScheme.listPanelColor,
+                            shape = RoundedCornerShape(
+                                topStart = if (index == 0) 16.dp else 0.dp,
+                                topEnd = if (index == 0) 16.dp else 0.dp,
+                                bottomStart = if (index == group.lastIndex) 16.dp else 0.dp,
+                                bottomEnd = if (index == group.lastIndex) 16.dp else 0.dp,
+                            ),
+                        ),
+                ) {
+                    ServerItem(
+                        server = server,
+                        isPinging = server.id in pingingServerIds,
+                        isSelected = server.id == effectiveSelectedId,
+                        isCurrentConnected = isConnected && activeServerId == server.id,
+                        isVpnActive = isConnected,
+                        actions = ServerItemActions(
+                            onConnect = { onConnectClick(server) },
+                            onEdit = { onEditClick(server) },
+                            onCopy = { onCopyClick(server) },
+                            onDelete = { onDeleteClick(server) },
+                        ),
+                    )
+                    if (index < group.lastIndex) BaseHorizontalDivider()
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ServerGroupHeader(
+    title: String,
+    expiresAt: Long,
+    now: Long,
+    expanded: Boolean,
+    isConnected: Boolean,
+    onToggle: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 220),
+        label = "serverGroupArrow",
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                role = Role.Button,
+                onClick = onToggle,
+            )
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (isConnected) Color.White else MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (expiresAt > 0) {
+                Text(
+                    text = subscriptionRemainingLabel(expiresAt = expiresAt, now = now),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when {
+                        isConnected -> Color.White.copy(alpha = 0.85f)
+                        expiresAt <= now -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+                if (expiresAt <= now) {
+                    TextButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.height(32.dp),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = if (isConnected) Color.White else MaterialTheme.colorScheme.primary,
+                        ),
+                        contentPadding = PaddingValues(
+                            horizontal = 12.dp,
+                            vertical = 0.dp,
+                        ),
+                    ) {
+                        Text(text = stringResource(id = R.string.import_refresh))
+                    }
+                }
+            }
+        }
+        Icon(
+            imageVector = Icons.Default.ExpandMore,
+            contentDescription = null,
+            tint = if (isConnected) Color.White else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.rotate(arrowRotation),
+        )
     }
 }

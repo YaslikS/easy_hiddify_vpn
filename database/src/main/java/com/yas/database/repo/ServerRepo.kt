@@ -4,6 +4,7 @@ import android.content.Context
 import com.yas.database.AppDB
 import com.yas.database.dao.ServerDao
 import com.yas.database.data.ServerDTO
+import com.yas.database.data.SubscriptionDTO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -44,4 +45,41 @@ class ServerRepo private constructor(private val dao: ServerDao) : ServerDao {
     override suspend fun remove(data: ServerDTO) {
         dao.remove(data)
     }
+
+    override suspend fun updatePing(
+        id: Int,
+        config: String,
+        pingMs: Long,
+    ) = dao.updatePing(
+        id = id,
+        config = config,
+        pingMs = pingMs,
+    )
+
+    override suspend fun clearPing() = dao.clearPing()
+
+    override suspend fun saveImport(
+        items: List<ServerDTO>,
+        subscription: SubscriptionDTO?,
+    ) = dao.saveImport(
+        items = items,
+        subscription = subscription,
+    )
+
+    override suspend fun getSubscriptionTitle(url: String): String? = dao.getSubscriptionTitle(url = url)
+
+    override fun subscriptions(): Flow<ImmutableList<SubscriptionDTO>> =
+        dao.subscriptions().map { it.toImmutableList() }
+
+    override suspend fun deleteSubscriptionServers(url: String) = dao.deleteSubscriptionServers(url = url)
+
+    override suspend fun deleteSubscriptionRecord(url: String) = dao.deleteSubscriptionRecord(url = url)
+
+    override suspend fun deleteSubscription(url: String) = dao.deleteSubscription(url = url)
+
+    override suspend fun insertSubscription(subscription: SubscriptionDTO) =
+        dao.insertSubscription(subscription = subscription)
+
+    override suspend fun getBySource(subscriptionUrl: String?): List<ServerDTO> =
+        dao.getBySource(subscriptionUrl = subscriptionUrl)
 }

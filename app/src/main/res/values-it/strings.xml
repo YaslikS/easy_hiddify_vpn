@@ -14,7 +14,8 @@
     <string name="total">Totale: %1$s</string>
 
     <!-- ==================== Servers & Bottom Sheet ==================== -->
-    <string name="saved_ervers">Server salvati</string>
+    <string name="servers_and_subscriptions">Server / Abbonamenti</string>
+    <string name="subscription_delete_failed">Impossibile eliminare l’abbonamento.</string>
     <string name="editing_servers">Modifica server</string>
     <string name="add">Aggiungi</string>
     <string name="done">Fine</string>
@@ -125,6 +126,25 @@
 
     <!-- ==================== Accessibility (Content Descriptions) ==================== -->
     <string name="cd_power">Alimentazione</string>
-    <string name="cd_ping_servers">Ping dei server</string>
+    <string name="cd_ping_servers">Verifica i server tramite HTTPS</string>
+    <string name="ping_failed">Errore di verifica</string>
     <string name="cd_back">Indietro</string>
+    <string name="import_servers">Importa server</string>
+    <string name="servers_added">Aggiunti</string>
+    <string name="servers_subscription">Abbonamento</string>
+    <string name="import_input">Link dei server o URL HTTPS di abbonamento</string>
+    <string name="import_subscriptions">Abbonamenti salvati</string>
+    <string name="import_menu_server">Server</string>
+    <string name="import_refresh">Aggiorna</string>
+    <string name="import_delete_subscription">Eliminare l’abbonamento?</string>
+    <string name="import_delete_subscription_message">L’abbonamento e tutti i suoi server verranno eliminati. Gli altri server saranno conservati.</string>
+    <string name="import_expiry_unknown">Scadenza non indicata</string>
+    <string name="import_expiry_date">Scade il %1$s</string>
+    <string name="import_expiry_remaining">Tempo rimanente: %1$d g · %2$d h · %3$d min</string>
+    <string name="import_expired">Abbonamento scaduto</string>
+    <string name="import_summary">Server: %1$d · Ignorati: %2$d</string>
+    <string name="import_working">Elaborazione in corso…</string>
+    <string name="import_error">Importazione non riuscita. Controlla il link o l’elenco dei server e riprova.</string>
+    <string name="import_preview">Anteprima</string>
+    <string name="import_close">Chiudi</string>
 </resources>

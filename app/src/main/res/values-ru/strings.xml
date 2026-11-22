@@ -14,7 +14,8 @@
     <string name="total">Всего: %1$s</string>
 
     <!-- ==================== Servers & Bottom Sheet ==================== -->
-    <string name="saved_ervers">Сохраненные серверы</string>
+    <string name="servers_and_subscriptions">Серверы / Подписки</string>
+    <string name="subscription_delete_failed">Не удалось удалить подписку.</string>
     <string name="editing_servers">Редактирование</string>
     <string name="add">Добавить</string>
     <string name="done">Готово</string>
@@ -125,6 +126,25 @@
 
     <!-- ==================== Accessibility (Content Descriptions) ==================== -->
     <string name="cd_power">Питание</string>
-    <string name="cd_ping_servers">Проверить пинг серверов</string>
+    <string name="cd_ping_servers">Проверить серверы через HTTPS</string>
+    <string name="ping_failed">Ошибка проверки</string>
     <string name="cd_back">Назад</string>
+    <string name="import_servers">Импорт серверов</string>
+    <string name="servers_added">Добавленные</string>
+    <string name="servers_subscription">Подписка</string>
+    <string name="import_input">Ссылки серверов или HTTPS-ссылка подписки</string>
+    <string name="import_subscriptions">Сохранённые подписки</string>
+    <string name="import_menu_server">Сервер</string>
+    <string name="import_refresh">Обновить</string>
+    <string name="import_delete_subscription">Удалить подписку?</string>
+    <string name="import_delete_subscription_message">Подписка и все её серверы будут удалены. Остальные серверы останутся.</string>
+    <string name="import_expiry_unknown">Срок действия не указан</string>
+    <string name="import_expiry_date">Действует до: %1$s</string>
+    <string name="import_expiry_remaining">Осталось: %1$d дн. · %2$d ч · %3$d мин</string>
+    <string name="import_expired">Срок действия истёк</string>
+    <string name="import_summary">Серверов: %1$d · Пропущено: %2$d</string>
+    <string name="import_working">Обработка…</string>
+    <string name="import_error">Не удалось импортировать. Проверьте ссылку или список серверов и повторите попытку.</string>
+    <string name="import_preview">Предпросмотр</string>
+    <string name="import_close">Закрыть</string>
 </resources>

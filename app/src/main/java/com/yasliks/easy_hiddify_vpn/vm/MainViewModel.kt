@@ -22,8 +22,8 @@ class MainViewModel @Inject constructor(
     private val vpnStarter: VpnStarter,
 ) : ViewModel() {
 
-    private val _currentRoute = MutableStateFlow(AppRoute.Main.route)
-    val currentRoute: StateFlow<String> = _currentRoute.asStateFlow()
+    private val _currentRoute = MutableStateFlow<AppRoute>(AppRoute.Main)
+    val currentRoute: StateFlow<AppRoute> = _currentRoute.asStateFlow()
 
     private val _showPermissionDialog = MutableStateFlow(false)
     val showPermissionDialog: StateFlow<Boolean> = _showPermissionDialog.asStateFlow()
@@ -31,7 +31,7 @@ class MainViewModel @Inject constructor(
     private val _showEmptyServerDialog = MutableStateFlow(false)
     val showEmptyServerDialog: StateFlow<Boolean> = _showEmptyServerDialog.asStateFlow()
 
-    fun navigateTo(route: String) {
+    fun navigateTo(route: AppRoute) {
         _currentRoute.value = route
     }
 

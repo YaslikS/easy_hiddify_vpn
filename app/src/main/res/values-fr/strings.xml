@@ -14,7 +14,8 @@
     <string name="total">Total : %1$s</string>
 
     <!-- ==================== Servers & Bottom Sheet ==================== -->
-    <string name="saved_ervers">Serveurs enregistrés</string>
+    <string name="servers_and_subscriptions">Serveurs / Abonnements</string>
+    <string name="subscription_delete_failed">Impossible de supprimer l’abonnement.</string>
     <string name="editing_servers">Modification</string>
     <string name="add">Ajouter</string>
     <string name="done">Terminé</string>
@@ -125,6 +126,25 @@
 
     <!-- ==================== Accessibility (Content Descriptions) ==================== -->
     <string name="cd_power">Alimentation</string>
-    <string name="cd_ping_servers">Tester le ping des serveurs</string>
+    <string name="cd_ping_servers">Tester les serveurs via HTTPS</string>
+    <string name="ping_failed">Erreur de test</string>
     <string name="cd_back">Retour</string>
+    <string name="import_servers">Importer des serveurs</string>
+    <string name="servers_added">Ajoutés</string>
+    <string name="servers_subscription">Abonnement</string>
+    <string name="import_input">Liens de serveurs ou URL HTTPS de souscription</string>
+    <string name="import_subscriptions">Abonnements enregistrés</string>
+    <string name="import_menu_server">Serveur</string>
+    <string name="import_refresh">Actualiser</string>
+    <string name="import_delete_subscription">Supprimer l’abonnement ?</string>
+    <string name="import_delete_subscription_message">L’abonnement et tous ses serveurs seront supprimés. Les autres serveurs seront conservés.</string>
+    <string name="import_expiry_unknown">Date d’expiration non indiquée</string>
+    <string name="import_expiry_date">Expire le %1$s</string>
+    <string name="import_expiry_remaining">Temps restant : %1$d j · %2$d h · %3$d min</string>
+    <string name="import_expired">Abonnement expiré</string>
+    <string name="import_summary">Serveurs : %1$d · Ignorés : %2$d</string>
+    <string name="import_working">Traitement en cours…</string>
+    <string name="import_error">Échec de l’importation. Vérifiez le lien ou la liste des serveurs, puis réessayez.</string>
+    <string name="import_preview">Aperçu</string>
+    <string name="import_close">Fermer</string>
 </resources>

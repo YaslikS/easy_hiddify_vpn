@@ -1,6 +1,7 @@
 package com.yas.database.data
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 
@@ -11,4 +12,8 @@ data class ServerDTO(
     val name: String,
     val config: String,
     val pingMs: Long = -1L,
-)
+    val subscriptionUrl: String? = null,
+) {
+    @get:Ignore
+    val subscriptionUrlNotNull: String get() = subscriptionUrl.orEmpty()
+}

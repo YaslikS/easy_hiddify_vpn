@@ -37,6 +37,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="easyhiddify" android:host="import" android:path="/server" />
+                <data android:scheme="easyhiddify" android:host="import" android:path="/servers" />
+                <data android:scheme="easyhiddify" android:host="import" android:path="/subscription" />
+            </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />

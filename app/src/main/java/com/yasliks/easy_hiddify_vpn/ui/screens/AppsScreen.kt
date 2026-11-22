@@ -1,10 +1,8 @@
 package com.yasliks.easy_hiddify_vpn.ui.screens
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -20,7 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -30,7 +27,9 @@ import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.ui.components.AppListItem
 import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.ui.components.base.TopBar
-import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
+import com.yasliks.easy_hiddify_vpn.ui.components.common.dividedItems
+import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanel
+import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanelColor
 import com.yasliks.easy_hiddify_vpn.vm.AppsFilter
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
@@ -236,20 +235,17 @@ private fun AppsList(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-        contentPadding = PaddingValues(0.dp)
+            .listPanel(color = MaterialTheme.colorScheme.listPanelColor),
     ) {
-        itemsIndexed(items = apps, key = { _, app -> app.packageName }) { index, app ->
+        dividedItems(
+            items = apps,
+            key = { it.packageName },
+        ) { app ->
             AppListItem(
                 app = app,
                 isConnected = isConnected,
-                onAppClick = onAppClick
+                onAppClick = onAppClick,
             )
-
-            if (index < apps.lastIndex) {
-                BaseHorizontalDivider()
-            }
         }
     }
 }

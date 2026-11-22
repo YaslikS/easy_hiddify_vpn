@@ -14,7 +14,8 @@
     <string name="total">Total: %1$s</string>
 
     <!-- ==================== Servers & Bottom Sheet ==================== -->
-    <string name="saved_ervers">Servidores guardados</string>
+    <string name="servers_and_subscriptions">Servidores / Suscripciones</string>
+    <string name="subscription_delete_failed">No se pudo eliminar la suscripción.</string>
     <string name="editing_servers">Editando servidores</string>
     <string name="add">Añadir</string>
     <string name="done">Listo</string>
@@ -125,6 +126,25 @@
 
     <!-- ==================== Accessibility (Content Descriptions) ==================== -->
     <string name="cd_power">Encendido</string>
-    <string name="cd_ping_servers">Comprobar ping de servidores</string>
+    <string name="cd_ping_servers">Probar servidores mediante HTTPS</string>
+    <string name="ping_failed">Error de prueba</string>
     <string name="cd_back">Atrás</string>
+    <string name="import_servers">Importar servidores</string>
+    <string name="servers_added">Añadidos</string>
+    <string name="servers_subscription">Suscripción</string>
+    <string name="import_input">Enlaces de servidores o URL HTTPS de suscripción</string>
+    <string name="import_subscriptions">Suscripciones guardadas</string>
+    <string name="import_menu_server">Servidor</string>
+    <string name="import_refresh">Actualizar</string>
+    <string name="import_delete_subscription">¿Eliminar la suscripción?</string>
+    <string name="import_delete_subscription_message">Se eliminarán la suscripción y todos sus servidores. Los demás servidores se conservarán.</string>
+    <string name="import_expiry_unknown">Caducidad no indicada</string>
+    <string name="import_expiry_date">Caduca: %1$s</string>
+    <string name="import_expiry_remaining">Tiempo restante: %1$d d · %2$d h · %3$d min</string>
+    <string name="import_expired">Suscripción caducada</string>
+    <string name="import_summary">Servidores: %1$d · Omitidos: %2$d</string>
+    <string name="import_working">Procesando…</string>
+    <string name="import_error">No se pudo importar. Comprueba el enlace o la lista de servidores e inténtalo de nuevo.</string>
+    <string name="import_preview">Vista previa</string>
+    <string name="import_close">Cerrar</string>
 </resources>

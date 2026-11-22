@@ -1,41 +1,44 @@
 package com.yasliks.easy_hiddify_vpn.vm
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yas.database.data.ServerDTO
 import com.yas.database.repo.ServerRepo
 import com.yasliks.database.data.SettingsData
-import com.yasliks.easy_hiddify_vpn.utils.PingUtils
+import com.yasliks.easy_hiddify_vpn.utils.LatencyStatus
+import com.yasliks.hiddify_library_lib.EasyHiddify
+import com.yasliks.hiddify_library_lib.utils.HiddifyLatencyTest
+import com.yasliks.hiddify_library_lib.utils.LatencyResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 
 @HiltViewModel
 class ServerViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val serverRepo: ServerRepo,
     private val settings: DataStore<SettingsData>,
-    private val pingUtils: PingUtils,
 ) : ViewModel() {
 
     val servers = serverRepo.getAllFlow()
+    val subscriptions = serverRepo.subscriptions()
 
     val lastServerId: Flow<Int> = settings.data
         .map { it.lastServerId }
 
     private val _isPinging = MutableStateFlow(false)
     val isPinging = _isPinging.asStateFlow()
+    private val _pingingServerIds = MutableStateFlow<PersistentSet<Int>>(persistentSetOf())
+    val pingingServerIds = _pingingServerIds.asStateFlow()
+    private var pingJob: Job? = null
 
     fun setLastServerId(id: Int) {
         viewModelScope.launch {
@@ -51,34 +54,35 @@ class ServerViewModel @Inject constructor(
         return serverRepo.getAll()
     }
 
-    fun insert(config: String, name: String) {
+    fun insert(
+        config: String,
+        name: String,
+    ) {
         viewModelScope.launch {
             serverRepo.insert(
-                ServerDTO(
-                    id = 0,
+                data = ServerDTO(
                     config = config,
                     name = name,
-                    pingMs = -1L
-                )
+                ),
             )
         }
     }
 
     fun insert(servers: List<ServerDTO>) {
         viewModelScope.launch {
-            serverRepo.insert(servers)
+            serverRepo.insert(items = servers)
         }
     }
 
     fun update(server: ServerDTO) {
         viewModelScope.launch {
-            serverRepo.insert(listOf(server))
+            serverRepo.insert(data = server)
         }
     }
 
     fun remove(server: ServerDTO) {
         viewModelScope.launch {
-            serverRepo.remove(server)
+            serverRepo.remove(data = server)
         }
     }
 
@@ -89,23 +93,46 @@ class ServerViewModel @Inject constructor(
     }
 
     fun pingAllServers() {
-        viewModelScope.launch {
-            _isPinging.value = true
-            val currentServers = serverRepo.getAll()
-
-            val semaphore = Semaphore(7)
-
-            val updatedServers = currentServers.map { server ->
-                async {
-                    semaphore.withPermit {
-                        val ping = pingUtils.pingConfig(server.config)
-                        server.copy(pingMs = ping)
-                    }
-                }
-            }.awaitAll()
-
-            serverRepo.insert(updatedServers)
-            _isPinging.value = false
+        pingJob?.takeIf { !it.isCompleted }?.let {
+            it.cancel()
+            return
         }
+        pingJob = viewModelScope.launch {
+            _isPinging.value = true
+            try {
+                serverRepo.clearPing()
+                val (jsonServers, uriServers) = serverRepo.getAll()
+                    .partition { it.config.trimStart().startsWith(char = '{') }
+                for (batch in uriServers.chunked(size = HiddifyLatencyTest.MAX_BATCH_SIZE)) {
+                    checkBatch(servers = batch)
+                }
+                for (server in jsonServers) {
+                    checkBatch(servers = listOf(element = server))
+                }
+            } finally {
+                _pingingServerIds.value = persistentSetOf()
+                _isPinging.value = false
+            }
+        }
+    }
+
+    private suspend fun checkBatch(servers: List<ServerDTO>) {
+        _pingingServerIds.value = servers.map { it.id }.toPersistentSet()
+        EasyHiddify.instance.latency.measureBatch(
+            configs = servers.map { it.config },
+            onResult = { index, result ->
+                val server = servers[index]
+                serverRepo.updatePing(
+                    id = server.id,
+                    config = server.config,
+                    pingMs = when (result) {
+                        is LatencyResult.Reachable -> result.milliseconds.toLong()
+                        LatencyResult.NoResponse -> LatencyStatus.NO_RESPONSE
+                        LatencyResult.Failed -> LatencyStatus.FAILED
+                    },
+                )
+                _pingingServerIds.value = _pingingServerIds.value.removing(element = server.id)
+            },
+        )
     }
 }
