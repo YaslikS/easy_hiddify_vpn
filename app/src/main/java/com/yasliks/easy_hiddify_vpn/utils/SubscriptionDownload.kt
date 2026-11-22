@@ -1,6 +1,7 @@
 package com.yasliks.easy_hiddify_vpn.utils
 
 import com.yas.database.data.SubscriptionDTO
+import com.yasliks.easy_hiddify_vpn.data.SubscriptionContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -11,11 +12,6 @@ import javax.net.ssl.HttpsURLConnection
 internal object SubscriptionDownload {
     private const val TIMEOUT_MS = 10_000
     private const val MAX_REQUESTS = 6
-
-    data class Content(
-        val text: String,
-        val subscription: SubscriptionDTO,
-    )
 
     internal fun parseTitle(header: String?): String? {
         val value = header?.trim()?.takeIf { it.isNotEmpty() && it.length <= 1024 } ?: return null
@@ -44,7 +40,7 @@ internal object SubscriptionDownload {
         require(it.rawUserInfo == null && it.rawFragment == null)
     }.normalize()
 
-    suspend fun fetch(source: URI): Content = withContext(Dispatchers.IO) {
+    suspend fun fetch(source: URI): SubscriptionContent = withContext(Dispatchers.IO) {
         var url = source
         repeat(times = MAX_REQUESTS) {
             val connection = url.toURL().openConnection() as HttpsURLConnection
@@ -59,7 +55,7 @@ internal object SubscriptionDownload {
                         )
                     }
                     200 -> {
-                        return@withContext Content(
+                        return@withContext SubscriptionContent(
                             text = connection.readSubscriptionBody(),
                             subscription = SubscriptionDTO(
                                 url = source.toString(),

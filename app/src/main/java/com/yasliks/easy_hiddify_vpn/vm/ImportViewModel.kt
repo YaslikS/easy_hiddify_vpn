@@ -2,9 +2,9 @@ package com.yasliks.easy_hiddify_vpn.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.yas.database.data.SubscriptionDTO
 import com.yas.database.repo.ServerRepo
-import com.yasliks.easy_hiddify_vpn.utils.ImportKind
+import com.yasliks.easy_hiddify_vpn.data.ImportKind
+import com.yasliks.easy_hiddify_vpn.data.ImportState
 import com.yasliks.easy_hiddify_vpn.utils.ImportParser
 import com.yasliks.easy_hiddify_vpn.utils.SubscriptionDownload
 import com.yasliks.hiddify_library_lib.EasyHiddify
@@ -21,16 +21,7 @@ import javax.inject.Inject
 class ImportViewModel @Inject constructor(
     private val servers: ServerRepo,
 ) : ViewModel() {
-    internal data class State(
-        val input: String = "",
-        val kind: ImportKind = ImportKind.AUTO,
-        val busy: Boolean = false,
-        val error: Boolean = false,
-        val subscription: SubscriptionDTO? = null,
-        val preview: ImportParser.Preview? = null,
-    )
-
-    private val _state = MutableStateFlow<State?>(null)
+    private val _state = MutableStateFlow<ImportState?>(null)
     internal val state = _state.asStateFlow()
     internal val subscriptions = servers.subscriptions()
 
@@ -39,7 +30,7 @@ class ImportViewModel @Inject constructor(
         kind: ImportKind = ImportKind.AUTO,
     ) {
         if (_state.value?.busy != true) {
-            _state.value = State(
+            _state.value = ImportState(
                 input = input,
                 kind = kind,
             )
@@ -113,7 +104,7 @@ class ImportViewModel @Inject constructor(
         servers.deleteSubscription(url = url)
     }
 
-    private fun perform(action: suspend (State) -> State?) {
+    private fun perform(action: suspend (ImportState) -> ImportState?) {
         val current = _state.value ?: return
         if (current.busy) return
         _state.value = current.copy(busy = true, error = false)

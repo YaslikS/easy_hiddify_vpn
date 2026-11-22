@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yas.database.data.ServerDTO
 import com.yas.database.data.SubscriptionDTO
 import com.yasliks.easy_hiddify_vpn.R
+import com.yasliks.easy_hiddify_vpn.data.ServerGroup
 import com.yasliks.easy_hiddify_vpn.ui.components.main.ServerItem
 import com.yasliks.easy_hiddify_vpn.ui.components.main.ServerItemActions
 import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
@@ -67,7 +68,7 @@ import com.yasliks.easy_hiddify_vpn.ui.components.common.BaseHorizontalDivider
 import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanel
 import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanelColor
 import com.yasliks.easy_hiddify_vpn.ui.components.main.TrafficCard
-import com.yasliks.easy_hiddify_vpn.ui.components.main.VpnButton
+import com.yasliks.easy_hiddify_vpn.ui.components.main.VpnControlPanel
 import com.yasliks.easy_hiddify_vpn.ui.components.main.SwipeActionRow
 import com.yasliks.easy_hiddify_vpn.ui.components.main.subscriptionRemainingLabel
 import com.yasliks.easy_hiddify_vpn.ui.components.main.rememberSubscriptionTime
@@ -79,7 +80,8 @@ import kotlinx.coroutines.launch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun MainScreen(
@@ -101,14 +103,6 @@ fun MainScreen(
     var activeServerId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     var showServerSheet by rememberSaveable { mutableStateOf(false) }
-    var collapsedServerGroups by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
-    val toggleServerGroup: (String) -> Unit = remember {
-        { key ->
-            collapsedServerGroups = ArrayList(
-                if (key in collapsedServerGroups) collapsedServerGroups - key else collapsedServerGroups + key,
-            )
-        }
-    }
     var serverToEdit by remember { mutableStateOf<ServerDTO?>(null) }
 
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
@@ -116,6 +110,9 @@ fun MainScreen(
     val serviceActiveServerName by hiddify.state.activeServerName.collectAsStateWithLifecycle()
     val servers by serverViewModel.servers.collectAsStateWithLifecycle(initialValue = persistentListOf())
     val subscriptions by serverViewModel.subscriptions.collectAsStateWithLifecycle(initialValue = persistentListOf())
+    val collapsedServerGroups by serverViewModel.collapsedServerGroups.collectAsStateWithLifecycle(
+        initialValue = persistentSetOf(),
+    )
     val lastServerId by serverViewModel.lastServerId.collectAsStateWithLifecycle(initialValue = 0)
     val isPinging by serverViewModel.isPinging.collectAsStateWithLifecycle()
     val pingingServerIds by serverViewModel.pingingServerIds.collectAsStateWithLifecycle()
@@ -159,7 +156,6 @@ fun MainScreen(
     )
 
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
 
@@ -167,11 +163,6 @@ fun MainScreen(
         targetValue = if (isConnected) Color.White else onSurfaceColor,
         animationSpec = tween(durationMillis = 1000),
         label = "mainText",
-    )
-    val subTextColor by animateColorAsState(
-        targetValue = if (isConnected) Color.White.copy(alpha = 0.8f) else onSurfaceVariantColor,
-        animationSpec = tween(durationMillis = 1000),
-        label = "subText",
     )
     val buttonContentColor by animateColorAsState(
         targetValue = if (isConnected) Color.White else primaryColor,
@@ -294,14 +285,13 @@ fun MainScreen(
                 MainScreenLayout(
                     isLandscape = isLandscape,
                     controls = {
-                        VpnControlSection(
+                        VpnControlPanel(
                             isConnected = isConnected,
                             serverName = displayedServerName,
-                            subTextColor = subTextColor,
-                            onToggleClick = onToggleVpnClick,
+                            onToggle = onToggleVpnClick,
                             onButtonPositioned = { buttonCenterInRoot = it },
+                            modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
                         )
-                        if (isLandscape) Spacer(modifier = Modifier.height(8.dp))
                         TrafficSection(
                             hiddify = hiddify,
                             isConnected = isConnected,
@@ -327,8 +317,8 @@ fun MainScreen(
                         ServersListSection(
                             servers = servers,
                             subscriptions = subscriptions,
-                            collapsedGroups = remember(collapsedServerGroups) { collapsedServerGroups.toImmutableSet() },
-                            onToggleGroup = toggleServerGroup,
+                            collapsedGroups = collapsedServerGroups,
+                            onToggleGroup = serverViewModel::toggleServerGroup,
                             onRefreshSubscription = onRefreshSubscription,
                             onDeleteSubscription = onDeleteSubscription,
                             pingingServerIds = pingingServerIds,
@@ -426,64 +416,6 @@ private fun MainScreenLayout(
             controls()
             servers()
         }
-    }
-}
-
-@Composable
-private fun VpnControlSection(
-    isConnected: Boolean,
-    serverName: String?,
-    subTextColor: Color,
-    onToggleClick: () -> Unit,
-    onButtonPositioned: (Offset) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            if (serverName != null) {
-                Text(
-                    text = serverName,
-                    modifier = Modifier.weight(1f, fill = false)
-                        .widthIn(max = 180.dp)
-                        .padding(end = 8.dp),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = subTextColor,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            VpnButton(
-                isConnected = isConnected,
-                onClick = onToggleClick,
-                modifier = Modifier.onGloballyPositioned { coordinates ->
-                    val pos = coordinates.positionInRoot()
-                    val size = coordinates.size
-                    onButtonPositioned(
-                        Offset(
-                            x = pos.x + size.width / 2f,
-                            y = pos.y + size.height / 2f,
-                        ),
-                    )
-                },
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = if (isConnected) stringResource(R.string.status_secure) else stringResource(R.string.status_ready),
-            color = subTextColor,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 1.sp
-        )
     }
 }
 
@@ -632,7 +564,14 @@ private fun ServersListSection(
     modifier: Modifier = Modifier,
 ) {
     val groups = remember(servers) {
-        servers.groupBy { it.subscriptionUrlNotNull }.entries.sortedBy { it.key.isNotEmpty() }
+        servers.groupBy { it.subscriptionUrlNotNull }.entries
+            .sortedBy { it.key.isNotEmpty() }
+            .map { (url, items) ->
+                ServerGroup(
+                    subscriptionUrl = url,
+                    servers = items.toImmutableList(),
+                )
+            }.toImmutableList()
     }
     val titles = remember(subscriptions) {
         subscriptions.associate {
@@ -648,14 +587,13 @@ private fun ServersListSection(
             .fillMaxWidth()
             .padding(bottom = 12.dp),
     ) {
-        groups.forEachIndexed { groupIndex, (url, group) ->
-            val groupKey = "group:$url"
+        groups.forEachIndexed { groupIndex, serverGroup ->
+            val (url, group) = serverGroup
+            val groupKey = serverGroup.key
             val expanded = groupKey !in collapsedGroups
             item(key = groupKey) {
                 Column(modifier = Modifier.animateItem()) {
-                    if (groupIndex > 0 &&
-                        "group:${groups[groupIndex - 1].key}" in collapsedGroups
-                    ) {
+                    if (groupIndex > 0 && groups[groupIndex - 1].key in collapsedGroups) {
                         BaseHorizontalDivider(
                             modifier = Modifier.padding(horizontal = 8.dp),
                             color = if (isConnected) Color.White.copy(alpha = 0.55f)

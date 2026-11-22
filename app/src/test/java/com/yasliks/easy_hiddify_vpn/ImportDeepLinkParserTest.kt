@@ -1,7 +1,8 @@
 package com.yasliks.easy_hiddify_vpn
 
 import com.yasliks.easy_hiddify_vpn.utils.ImportDeepLinkParser
-import com.yasliks.easy_hiddify_vpn.utils.ImportKind
+import com.yasliks.easy_hiddify_vpn.data.ImportKind
+import com.yasliks.easy_hiddify_vpn.data.ImportRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -10,7 +11,7 @@ class ImportDeepLinkParserTest {
     @Test
     fun parsesSingleServerAndServerList() {
         assertEquals(
-            ImportDeepLinkParser.Request(
+            ImportRequest(
                 input = "hy2://test@vpn.example:443#Первый",
                 kind = ImportKind.SERVER,
             ),
@@ -19,7 +20,7 @@ class ImportDeepLinkParserTest {
             ),
         )
         assertEquals(
-            ImportDeepLinkParser.Request(
+            ImportRequest(
                 input = "first\nsecond",
                 kind = ImportKind.SERVERS,
             ),
@@ -30,7 +31,7 @@ class ImportDeepLinkParserTest {
     @Test
     fun preservesQueryOfNestedSubscriptionUrl() {
         assertEquals(
-            ImportDeepLinkParser.Request(
+            ImportRequest(
                 input = "https://vpn.example/list?token=a+b&format=text",
                 kind = ImportKind.SUBSCRIPTION,
             ),

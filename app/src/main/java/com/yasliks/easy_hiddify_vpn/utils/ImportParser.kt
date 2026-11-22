@@ -1,8 +1,8 @@
 package com.yasliks.easy_hiddify_vpn.utils
 
 import com.yas.database.data.ServerDTO
+import com.yasliks.easy_hiddify_vpn.data.ImportPreview
 import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import java.net.URI
 import java.util.Base64
@@ -17,12 +17,7 @@ internal object ImportParser {
         HiddifyPrefs.HY2_START_CONFIG,
     )
 
-    data class Preview(
-        val servers: ImmutableList<ServerDTO>,
-        val skipped: Int,
-    )
-
-    fun parse(input: String): Preview {
+    fun parse(input: String): ImportPreview {
         require(input.length <= MAX_BYTES)
         val text = input.trim().removePrefix("\uFEFF").trim()
         val decoded = if (text.contains(other = "://")) text else decode(text = text) ?: text
@@ -36,7 +31,7 @@ internal object ImportParser {
                     skipped++
                 }
             }
-        return Preview(
+        return ImportPreview(
             servers = servers.values.toImmutableList(),
             skipped = skipped,
         )

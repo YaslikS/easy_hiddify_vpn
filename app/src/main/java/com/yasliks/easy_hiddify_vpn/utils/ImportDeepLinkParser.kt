@@ -1,22 +1,12 @@
 package com.yasliks.easy_hiddify_vpn.utils
 
+import com.yasliks.easy_hiddify_vpn.data.ImportKind
+import com.yasliks.easy_hiddify_vpn.data.ImportRequest
 import java.net.URI
 import java.net.URLDecoder
 
-internal enum class ImportKind {
-    AUTO,
-    SERVER,
-    SERVERS,
-    SUBSCRIPTION,
-}
-
 internal object ImportDeepLinkParser {
-    data class Request(
-        val input: String,
-        val kind: ImportKind,
-    )
-
-    fun parse(link: String?): Request? {
+    fun parse(link: String?): ImportRequest? {
         val uri = link?.let { runCatching { URI(it) }.getOrNull() } ?: return null
         if (uri.scheme != "easyhiddify" || uri.host != "import") return null
         val kind = when (uri.path) {
@@ -32,7 +22,7 @@ internal object ImportDeepLinkParser {
             ?: return null
         val input = runCatching { URLDecoder.decode(value, Charsets.UTF_8.name()) }.getOrNull() ?: return null
         if (input.length > ImportParser.MAX_BYTES) return null
-        return Request(
+        return ImportRequest(
             input = input,
             kind = kind,
         )

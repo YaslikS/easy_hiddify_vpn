@@ -79,6 +79,7 @@ fun TrafficCard(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = vpnPanelBorder(isConnected = isConnected),
     ) {
         Column(
             modifier = Modifier

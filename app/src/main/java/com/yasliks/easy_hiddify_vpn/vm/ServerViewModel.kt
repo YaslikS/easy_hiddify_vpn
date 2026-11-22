@@ -7,6 +7,7 @@ import com.yas.database.data.ServerDTO
 import com.yas.database.repo.ServerRepo
 import com.yasliks.database.data.SettingsData
 import com.yasliks.easy_hiddify_vpn.utils.LatencyStatus
+import com.yasliks.easy_hiddify_vpn.utils.withToggledServerGroup
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import com.yasliks.hiddify_library_lib.utils.HiddifyLatencyTest
 import com.yasliks.hiddify_library_lib.utils.LatencyResult
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,6 +36,10 @@ class ServerViewModel @Inject constructor(
     val lastServerId: Flow<Int> = settings.data
         .map { it.lastServerId }
 
+    val collapsedServerGroups = settings.data
+        .map { it.collapsedServerGroupKeysList.toPersistentSet() }
+        .distinctUntilChanged()
+
     private val _isPinging = MutableStateFlow(false)
     val isPinging = _isPinging.asStateFlow()
     private val _pingingServerIds = MutableStateFlow<PersistentSet<Int>>(persistentSetOf())
@@ -46,6 +52,14 @@ class ServerViewModel @Inject constructor(
                 currentSettings.toBuilder()
                     .setLastServerId(id)
                     .build()
+            }
+        }
+    }
+
+    fun toggleServerGroup(key: String) {
+        viewModelScope.launch {
+            settings.updateData { currentSettings ->
+                currentSettings.withToggledServerGroup(key = key)
             }
         }
     }
