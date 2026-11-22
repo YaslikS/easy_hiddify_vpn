@@ -55,7 +55,7 @@ internal fun ImportSheet(viewModel: ImportViewModel) {
 
     ModalBottomSheet(
         onDismissRequest = viewModel::close,
-        sheetGesturesEnabled = preview == null && !state.busy,
+        sheetGesturesEnabled = preview == null && subscriptions.isEmpty() && !busy,
         sheetState = rememberModalBottomSheetState(
             skipPartiallyExpanded = true,
             confirmValueChange = { !busy || it != SheetValue.Hidden },
