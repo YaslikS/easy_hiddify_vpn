@@ -34,7 +34,21 @@ class AppsRepo private constructor(private val dao: AppsDao) : AppsDao {
     }
 
     override suspend fun insert(items: List<AppDTO>) {
-        dao.insert(items)
+        dao.insert(items = items)
+    }
+
+    override suspend fun remove(items: List<AppDTO>) {
+        dao.remove(items = items)
+    }
+
+    override suspend fun syncInstalledApps(
+        removed: List<AppDTO>,
+        changed: List<AppDTO>,
+    ) {
+        dao.syncInstalledApps(
+            removed = removed,
+            changed = changed,
+        )
     }
 
     override suspend fun removeByPackageName(packageName: String) {

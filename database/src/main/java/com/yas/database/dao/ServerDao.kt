@@ -22,15 +22,8 @@ interface ServerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(data: ServerDTO)
 
-    suspend fun insert(items: List<ServerDTO>) {
-        if (items.isEmpty()) {
-            return
-        }
-
-        items.forEach {
-            insert(data = it)
-        }
-    }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(items: List<ServerDTO>)
 
     @Delete
     suspend fun remove(data: ServerDTO)

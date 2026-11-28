@@ -2,9 +2,11 @@ package com.yas.database.utils
 
 import android.content.Context
 import androidx.annotation.RestrictTo
+import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
+import com.google.protobuf.InvalidProtocolBufferException
 import com.yasliks.database.data.SettingsData
 import java.io.InputStream
 import java.io.OutputStream
@@ -18,11 +20,14 @@ internal object ProtoSettingsUtils : Serializer<SettingsData> {
     override suspend fun readFrom(input: InputStream): SettingsData {
         try {
             return SettingsData.parseFrom(input)
-        } catch (e: Exception) {
-            // ignore
+        } catch (error: InvalidProtocolBufferException) {
+            val readError = error.unwrapIOException()
+            if (readError !== error) throw readError
+            throw CorruptionException(
+                message = "Error reading protobuf settings.",
+                cause = error,
+            )
         }
-
-        return defaultValue
     }
 
     override suspend fun writeTo(

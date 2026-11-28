@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.yas.database.data.AppDTO
-import kotlinx.collections.immutable.ImmutableList
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -21,14 +21,19 @@ interface AppsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(data: AppDTO)
 
-    suspend fun insert(items: List<AppDTO>) {
-        if (items.isEmpty()) {
-            return
-        }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(items: List<AppDTO>)
 
-        items.forEach {
-            insert(it)
-        }
+    @Delete
+    suspend fun remove(items: List<AppDTO>)
+
+    @Transaction
+    suspend fun syncInstalledApps(
+        removed: List<AppDTO>,
+        changed: List<AppDTO>,
+    ) {
+        if (removed.isNotEmpty()) remove(items = removed)
+        if (changed.isNotEmpty()) insert(items = changed)
     }
 
     @Delete
