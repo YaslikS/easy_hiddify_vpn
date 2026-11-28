@@ -76,8 +76,12 @@ class InstalledAppsSync @Inject constructor(
         }
     }
 
-    suspend fun selectedPackages(): List<String> {
+    suspend fun awaitInitialSync() {
         initialSync.await()
+    }
+
+    suspend fun selectedPackages(): List<String> {
+        awaitInitialSync()
         return appsMutex.withLock {
             appsRepo.getAll().filter { it.isSelected }.map { it.packageName }
         }

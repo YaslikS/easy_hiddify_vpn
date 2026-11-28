@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -33,6 +34,7 @@ import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanelColor
 import com.yasliks.easy_hiddify_vpn.vm.AppsFilter
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
+import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun AppsScreen(
@@ -225,11 +227,21 @@ private fun AppsSearchField(
 
 @Composable
 private fun AppsList(
-    apps: List<AppDTO>,
+    apps: ImmutableList<AppDTO>?,
     isConnected: Boolean,
     onAppClick: (AppDTO) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (apps == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()

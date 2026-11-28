@@ -7,7 +7,6 @@ import com.yas.database.repo.AppsRepo
 import com.yasliks.easy_hiddify_vpn.utils.InstalledAppsSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,14 +37,16 @@ class AppsViewModel @Inject constructor(
     private val _appsFilter = MutableStateFlow(AppsFilter.ALL)
     val appsFilter = _appsFilter.asStateFlow()
 
-    private val allApps = appsRepo.getAllFlow().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-        initialValue = persistentListOf(),
-    )
+    private val allApps = appsRepo.getAllFlow()
+        .onStart { installedApps.awaitInitialSync() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = null,
+        )
 
-    val apps: StateFlow<ImmutableList<AppDTO>> = combine(allApps, searchAppsStr, appsFilter) { list, query, filter ->
-        list.filter { app ->
+    val apps: StateFlow<ImmutableList<AppDTO>?> = combine(allApps, searchAppsStr, appsFilter) { list, query, filter ->
+        list?.filter { app ->
             val matchesFilter = when (filter) {
                 AppsFilter.ALL -> true
                 AppsFilter.ENABLED -> app.isSelected
@@ -52,15 +54,15 @@ class AppsViewModel @Inject constructor(
             }
             matchesFilter && (app.name.contains(query, ignoreCase = true) ||
                 app.packageName.contains(query, ignoreCase = true))
-        }.toImmutableList()
+        }?.toImmutableList()
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-        initialValue = persistentListOf(),
+        initialValue = null,
     )
 
     val isAllSelected = allApps.map { list ->
-        list.isNotEmpty() && list.all { it.isSelected }
+        !list.isNullOrEmpty() && list.all { it.isSelected }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
