@@ -33,7 +33,6 @@ import com.yasliks.easy_hiddify_vpn.ui.components.common.listPanelColor
 import com.yasliks.easy_hiddify_vpn.vm.AppsFilter
 import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
-import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun AppsScreen(
@@ -41,10 +40,10 @@ fun AppsScreen(
     appsViewModel: AppsViewModel,
 ) {
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
-    val apps by appsViewModel.apps.collectAsStateWithLifecycle(initialValue = persistentListOf())
+    val apps by appsViewModel.apps.collectAsStateWithLifecycle()
     val searchAppsStr by appsViewModel.searchAppsStr.collectAsStateWithLifecycle()
     val appsFilter by appsViewModel.appsFilter.collectAsStateWithLifecycle()
-    val isAllSelected by appsViewModel.isAllSelected.collectAsStateWithLifecycle(initialValue = false)
+    val isAllSelected by appsViewModel.isAllSelected.collectAsStateWithLifecycle()
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE

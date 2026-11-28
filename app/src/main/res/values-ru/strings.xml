@@ -119,6 +119,7 @@
     <string name="widget_zero_speed">0 Б/с</string>
 
     <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_label">Защищённый VPN</string>
     <string name="tile_vpn_on">VPN: Вкл</string>
     <string name="tile_secure">Защищено</string>
     <string name="tile_vpn_off">VPN: Выкл</string>

@@ -7,6 +7,7 @@ import com.yas.database.repo.AppsRepo
 import com.yas.database.repo.ServerRepo
 import com.yas.database.utils.settingsDataStore
 import com.yasliks.database.data.SettingsData
+import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,6 +19,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ProviderObject {
+
+    @Provides
+    @Singleton
+    fun provideEasyHiddify(): EasyHiddify = EasyHiddify.instance
 
     @Provides
     @Singleton

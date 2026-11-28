@@ -79,8 +79,6 @@ import kotlin.math.hypot
 import kotlinx.coroutines.launch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 
 @Composable
@@ -108,12 +106,10 @@ fun MainScreen(
     val isConnected by hiddify.state.connected.collectAsStateWithLifecycle()
     val serviceActiveServerId by hiddify.state.activeServerId.collectAsStateWithLifecycle()
     val serviceActiveServerName by hiddify.state.activeServerName.collectAsStateWithLifecycle()
-    val servers by serverViewModel.servers.collectAsStateWithLifecycle(initialValue = persistentListOf())
-    val subscriptions by serverViewModel.subscriptions.collectAsStateWithLifecycle(initialValue = persistentListOf())
-    val collapsedServerGroups by serverViewModel.collapsedServerGroups.collectAsStateWithLifecycle(
-        initialValue = persistentSetOf(),
-    )
-    val lastServerId by serverViewModel.lastServerId.collectAsStateWithLifecycle(initialValue = 0)
+    val servers by serverViewModel.servers.collectAsStateWithLifecycle()
+    val subscriptions by serverViewModel.subscriptions.collectAsStateWithLifecycle()
+    val collapsedServerGroups by serverViewModel.collapsedServerGroups.collectAsStateWithLifecycle()
+    val lastServerId by serverViewModel.lastServerId.collectAsStateWithLifecycle()
     val isPinging by serverViewModel.isPinging.collectAsStateWithLifecycle()
     val pingingServerIds by serverViewModel.pingingServerIds.collectAsStateWithLifecycle()
 

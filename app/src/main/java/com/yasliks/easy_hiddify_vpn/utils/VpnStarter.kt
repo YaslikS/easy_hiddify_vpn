@@ -1,7 +1,6 @@
 package com.yasliks.easy_hiddify_vpn.utils
 
 import androidx.datastore.core.DataStore
-import com.yas.database.repo.AppsRepo
 import com.yas.database.repo.ServerRepo
 import com.yasliks.database.data.SettingsData
 import com.yasliks.hiddify_library_lib.EasyHiddify
@@ -29,7 +28,7 @@ sealed interface StartVpnResult {
 @Singleton
 class VpnStarter @Inject constructor(
     private val serverRepo: ServerRepo,
-    private val appsRepo: AppsRepo,
+    private val installedApps: InstalledAppsSync,
     private val settings: DataStore<SettingsData>,
 ) {
 
@@ -43,15 +42,11 @@ class VpnStarter @Inject constructor(
         serverId: Int,
         disconnectText: String,
     ): StartVpnResult {
-        val selectedApps = appsRepo.getAll()
-            .filter { it.isSelected }
-            .map { it.packageName }
-
         hiddify.startVpn(
             configStr = config,
             serverName = serverName,
             serverId = serverId,
-            appsList = selectedApps,
+            appsList = installedApps.selectedPackages(),
             isEnabledApps = true,
             disconnectText = disconnectText,
         )

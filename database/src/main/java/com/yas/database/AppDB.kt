@@ -15,6 +15,7 @@ import com.yas.database.migrations.MIGRATION_3_4
 import com.yas.database.migrations.MIGRATION_4_5
 import com.yas.database.migrations.MIGRATION_5_6
 import com.yas.database.migrations.MIGRATION_6_7
+import com.yas.database.migrations.MIGRATION_7_8
 
 
 @Database(
@@ -23,8 +24,8 @@ import com.yas.database.migrations.MIGRATION_6_7
         ServerDTO::class,
         SubscriptionDTO::class,
     ],
-    version = 7,
-    exportSchema = false,
+    version = 8,
+    exportSchema = true,
 )
 internal abstract class AppDB : RoomDatabase() {
 
@@ -38,22 +39,29 @@ internal abstract class AppDB : RoomDatabase() {
         @Synchronized
         fun getDatabase(context: Context): AppDB {
             return INSTANCE ?: synchronized(lock) {
-                Room.databaseBuilder(
+                buildDatabase(
                     context = context,
-                    klass = AppDB::class.java,
                     name = "easy_hiddify_app.db",
-                )
-                    .addMigrations(MIGRATION_1_2)
-                    .addMigrations(MIGRATION_2_3)
-                    .addMigrations(MIGRATION_3_4)
-                    .addMigrations(MIGRATION_4_5)
-                    .addMigrations(MIGRATION_5_6)
-                    .addMigrations(MIGRATION_6_7)
-                    .build().also {
-                        INSTANCE = it
-                    }
+                ).also { INSTANCE = it }
             }
         }
+
+        internal fun buildDatabase(
+            context: Context,
+            name: String,
+        ): AppDB = Room.databaseBuilder(
+            context = context,
+            klass = AppDB::class.java,
+            name = name,
+        ).addMigrations(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_6_7,
+            MIGRATION_7_8,
+        ).build()
     }
 
     abstract fun appsDao(): AppsDao

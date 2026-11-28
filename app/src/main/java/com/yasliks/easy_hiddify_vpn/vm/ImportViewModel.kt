@@ -20,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ImportViewModel @Inject constructor(
     private val servers: ServerRepo,
+    private val hiddify: EasyHiddify,
 ) : ViewModel() {
     private val _state = MutableStateFlow<ImportState?>(null)
     internal val state = _state.asStateFlow()
@@ -97,7 +98,6 @@ class ImportViewModel @Inject constructor(
     }
 
     private suspend fun removeSubscription(url: String) {
-        val hiddify = EasyHiddify.instance
         if (servers.getBySource(subscriptionUrl = url).any { it.id == hiddify.state.activeServerId.value }) {
             hiddify.stopVpn()
         }

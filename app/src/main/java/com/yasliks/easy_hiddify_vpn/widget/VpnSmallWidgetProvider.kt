@@ -12,15 +12,21 @@ import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import com.yasliks.hiddify_library_lib.prefs.HiddifyPrefs
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class VpnSmallWidgetProvider : AppWidgetProvider() {
+
+    @Inject
+    lateinit var hiddify: EasyHiddify
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val isConnected = EasyHiddify.instance.state.connected.value
+        val isConnected = hiddify.state.connected.value
         updateAllWidgets(
             context = context,
             appWidgetManager = appWidgetManager,

@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.extensions.SystemBarsManager
 import com.yasliks.easy_hiddify_vpn.ui.components.base.AppRoute
@@ -28,9 +29,6 @@ import com.yasliks.hiddify_library_lib.EasyHiddify
 internal fun AppContent(
     hiddify: EasyHiddify,
     mainViewModel: MainViewModel,
-    appsViewModel: AppsViewModel,
-    serverViewModel: ServerViewModel,
-    settingsViewModel: SettingsViewModel,
     importViewModel: ImportViewModel,
     onDeleteSubscription: (String) -> Unit,
 ) {
@@ -69,7 +67,7 @@ internal fun AppContent(
                 AppRoute.Main -> {
                     val disconnectText = stringResource(id = R.string.push_button_text)
                     MainScreen(
-                        serverViewModel = serverViewModel,
+                        serverViewModel = viewModel<ServerViewModel>(),
                         hiddify = hiddify,
                         onImportClick = { importViewModel.open() },
                         onRefreshSubscription = importViewModel::refreshSubscription,
@@ -87,10 +85,10 @@ internal fun AppContent(
                 }
                 AppRoute.Apps -> AppsScreen(
                     hiddify = hiddify,
-                    appsViewModel = appsViewModel,
+                    appsViewModel = viewModel<AppsViewModel>(),
                 )
                 AppRoute.Settings -> SettingsScreen(
-                    viewModel = settingsViewModel,
+                    viewModel = viewModel<SettingsViewModel>(),
                     onOpenLogs = { mainViewModel.navigateTo(route = AppRoute.Logs) },
                 )
                 AppRoute.Logs -> {

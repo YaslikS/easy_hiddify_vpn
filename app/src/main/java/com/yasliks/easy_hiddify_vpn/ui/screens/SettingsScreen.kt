@@ -92,7 +92,7 @@ private fun SettingsListContent(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val hSettings = viewModel.hiddifySettings
-    val autoStartVpn by viewModel.autoStartVpn.collectAsStateWithLifecycle(initialValue = false)
+    val autoStartVpn by viewModel.autoStartVpn.collectAsStateWithLifecycle()
     val dnsServer by hSettings.dnsServer.collectAsStateWithLifecycle()
     val mtu by hSettings.mtu.collectAsStateWithLifecycle()
     val enableIPv6 by hSettings.enableIPv6.collectAsStateWithLifecycle()
@@ -331,7 +331,10 @@ private fun AdvancedTuningGroup(
                 supportingText = { Text(stringResource(R.string.settings_log_level_hint)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier.menuAnchor().fillMaxWidth().padding(horizontal = 12.dp)
+                modifier = Modifier
+                    .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
             )
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 SettingsViewModel.logLevels.forEach { level ->

@@ -20,6 +20,9 @@ class QuickConnectActivity : ComponentActivity() {
 
     @Inject
     lateinit var vpnStarter: VpnStarter
+
+    @Inject
+    lateinit var hiddify: EasyHiddify
     private var handled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +48,6 @@ class QuickConnectActivity : ComponentActivity() {
     }
 
     private suspend fun toggleVpn() {
-        val hiddify = EasyHiddify.instance
         if (hiddify.state.connected.value) {
             hiddify.stopVpn()
             return

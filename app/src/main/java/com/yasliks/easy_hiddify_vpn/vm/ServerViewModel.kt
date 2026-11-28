@@ -13,14 +13,15 @@ import com.yasliks.hiddify_library_lib.utils.HiddifyLatencyTest
 import com.yasliks.hiddify_library_lib.utils.LatencyResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,17 +29,37 @@ import javax.inject.Inject
 class ServerViewModel @Inject constructor(
     private val serverRepo: ServerRepo,
     private val settings: DataStore<SettingsData>,
+    private val hiddify: EasyHiddify,
 ) : ViewModel() {
 
-    val servers = serverRepo.getAllFlow()
-    val subscriptions = serverRepo.subscriptions()
+    private val sharingStarted = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000)
 
-    val lastServerId: Flow<Int> = settings.data
+    val servers = serverRepo.getAllFlow().stateIn(
+        scope = viewModelScope,
+        started = sharingStarted,
+        initialValue = persistentListOf(),
+    )
+    val subscriptions = serverRepo.subscriptions().stateIn(
+        scope = viewModelScope,
+        started = sharingStarted,
+        initialValue = persistentListOf(),
+    )
+
+    val lastServerId = settings.data
         .map { it.lastServerId }
+        .stateIn(
+            scope = viewModelScope,
+            started = sharingStarted,
+            initialValue = 0,
+        )
 
     val collapsedServerGroups = settings.data
         .map { it.collapsedServerGroupKeysList.toPersistentSet() }
-        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = sharingStarted,
+            initialValue = persistentSetOf(),
+        )
 
     private val _isPinging = MutableStateFlow(false)
     val isPinging = _isPinging.asStateFlow()
@@ -132,7 +153,7 @@ class ServerViewModel @Inject constructor(
 
     private suspend fun checkBatch(servers: List<ServerDTO>) {
         _pingingServerIds.value = servers.map { it.id }.toPersistentSet()
-        EasyHiddify.instance.latency.measureBatch(
+        hiddify.latency.measureBatch(
             configs = servers.map { it.config },
             onResult = { index, result ->
                 val server = servers[index]

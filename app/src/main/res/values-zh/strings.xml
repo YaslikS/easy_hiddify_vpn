@@ -119,6 +119,7 @@
     <string name="widget_zero_speed">0 B/s</string>
 
     <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_label">安全 VPN</string>
     <string name="tile_vpn_on">VPN：开启</string>
     <string name="tile_secure">安全</string>
     <string name="tile_vpn_off">VPN：关闭</string>

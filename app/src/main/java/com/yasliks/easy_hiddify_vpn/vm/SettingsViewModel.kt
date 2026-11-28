@@ -6,23 +6,31 @@ import androidx.lifecycle.viewModelScope
 import com.yasliks.database.data.SettingsData
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsDataStore: DataStore<SettingsData>,
+    hiddify: EasyHiddify,
 ) : ViewModel() {
 
-    val hiddifySettings = EasyHiddify.instance.settings
+    val hiddifySettings = hiddify.settings
 
     companion object {
        val logLevels = listOf("trace", "debug", "info", "warn", "error", "fatal")
     }
 
-    val autoStartVpn: Flow<Boolean> = settingsDataStore.data.map { it.autoStartVpn }
+    val autoStartVpn = settingsDataStore.data
+        .map { it.autoStartVpn }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = false,
+        )
 
     fun setAutoStartVpn(enabled: Boolean) {
         viewModelScope.launch {

@@ -7,7 +7,6 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.secrets.gradle.plugin)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidHilt)
 }
@@ -126,7 +125,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-//            isShrinkResources = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -136,6 +135,13 @@ android {
         getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
+            val debugProperties = Properties().apply {
+                val propertiesFile = rootProject.file("local.properties")
+                if (propertiesFile.isFile) propertiesFile.inputStream().use { load(it) }
+            }
+            listOf("vless_serv", "ss_serv", "trojan").forEach { key ->
+                buildConfigField("String", key, groovy.json.JsonOutput.toJson(debugProperties.getProperty(key, "")))
+            }
         }
     }
 }
@@ -182,11 +188,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.hilt)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
 
     implementation(libs.androidx.datastore)
-    implementation(libs.protobuf.java)
-    implementation(libs.protobuf.java.util)
     implementation(libs.androidx.datastore.core)
 
     implementation(project(":database"))

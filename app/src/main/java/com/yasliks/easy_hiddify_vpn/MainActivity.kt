@@ -11,23 +11,19 @@ import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
 import com.yasliks.easy_hiddify_vpn.ui.AppContent
 import com.yasliks.easy_hiddify_vpn.utils.ImportDeepLinkParser
 import com.yasliks.easy_hiddify_vpn.utils.hasVpnStartPermissions
-import com.yasliks.easy_hiddify_vpn.vm.AppsViewModel
 import com.yasliks.easy_hiddify_vpn.vm.ImportViewModel
 import com.yasliks.easy_hiddify_vpn.vm.MainViewModel
-import com.yasliks.easy_hiddify_vpn.vm.ServerViewModel
-import com.yasliks.easy_hiddify_vpn.vm.SettingsViewModel
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val hiddify get() = EasyHiddify.instance
+    @Inject
+    lateinit var hiddify: EasyHiddify
 
     private val mainViewModel: MainViewModel by viewModels()
-    private val appsViewModel: AppsViewModel by viewModels()
-    private val serverViewModel: ServerViewModel by viewModels()
-    private val settingsViewModel: SettingsViewModel by viewModels()
     private val importViewModel: ImportViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,9 +50,6 @@ class MainActivity : ComponentActivity() {
             AppContent(
                 hiddify = hiddify,
                 mainViewModel = mainViewModel,
-                appsViewModel = appsViewModel,
-                serverViewModel = serverViewModel,
-                settingsViewModel = settingsViewModel,
                 importViewModel = importViewModel,
                 onDeleteSubscription = ::deleteSubscription,
             )

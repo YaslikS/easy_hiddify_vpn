@@ -27,7 +27,7 @@ fun AppListItem(
         subtitleMaxLines = 1,
         leading = {
             AsyncImage(
-                model = app.iconPath,
+                model = app.iconPathNotNull.ifEmpty { null },
                 contentDescription = null,
                 modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)),
             )

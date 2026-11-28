@@ -28,9 +28,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
@@ -45,21 +43,24 @@ dependencies {
     androidTestImplementation(libs.coroutine.android)
 
     implementation(libs.androidx.datastore)
-    implementation(libs.protobuf.java)
-    implementation(libs.protobuf.java.util)
+    api(libs.protobuf.javalite)
     implementation(libs.androidx.datastore.core)
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.30.2"
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobufJava.get()}"
     }
 
     generateProtoTasks {
         all().onEach { task ->
-            task.plugins {
-                maybeCreate("java")
+            task.builtins {
+                maybeCreate("java").option("lite")
             }
         }
     }
+}
+
+ksp {
+    arg("room.schemaLocation", layout.projectDirectory.dir("schemas").asFile.path)
 }

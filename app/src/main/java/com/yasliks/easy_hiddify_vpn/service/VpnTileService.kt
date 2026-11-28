@@ -1,19 +1,16 @@
 package com.yasliks.easy_hiddify_vpn.service
 
-import android.Manifest
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import androidx.core.content.ContextCompat
 import com.yasliks.easy_hiddify_vpn.MainActivity
 import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
 import com.yasliks.easy_hiddify_vpn.utils.StartVpnResult
 import com.yasliks.easy_hiddify_vpn.utils.VpnStarter
+import com.yasliks.easy_hiddify_vpn.utils.hasVpnStartPermissions
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -31,13 +28,17 @@ class VpnTileService : TileService() {
     @Inject
     lateinit var vpnStarter: VpnStarter
 
-    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    @Inject
+    lateinit var hiddify: EasyHiddify
+
+    private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private var stateJob: Job? = null
 
     override fun onStartListening() {
         super.onStartListening()
+        stateJob?.cancel()
         stateJob = serviceScope.launch {
-            EasyHiddify.instance.state.connected.collect { isConnected ->
+            hiddify.state.connected.collect { isConnected ->
                 updateTileState(isConnected)
             }
         }
@@ -99,22 +100,12 @@ class VpnTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        val hiddify = EasyHiddify.instance
         val isConnected = hiddify.state.connected.value
 
         if (isConnected) {
             hiddify.stopVpn()
         } else {
-            val hasVpnPermission = VpnService.prepare(this) == null
-            val hasNotificationPermission =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    ContextCompat.checkSelfPermission(
-                        /* context = */ this,
-                        /* permission = */ Manifest.permission.POST_NOTIFICATIONS,
-                    ) == PackageManager.PERMISSION_GRANTED
-                } else true
-
-            if (!hasVpnPermission || !hasNotificationPermission) {
+            if (!hasVpnStartPermissions()) {
                 serviceScope.launch {
                     openMainActivity(reason = AppPrefs.PERMISSION)
                 }
@@ -122,7 +113,7 @@ class VpnTileService : TileService() {
                 return
             }
 
-            serviceScope.launch {
+            serviceScope.launch(context = Dispatchers.IO) {
                 val result = vpnStarter.startLastServer(
                     hiddify = hiddify,
                     disconnectText = getString(R.string.push_button_text),

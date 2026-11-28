@@ -121,6 +121,7 @@
     <string name="widget_zero_speed">0 B/s</string>
 
     <!-- ==================== Quick Settings Tile ==================== -->
+    <string name="tile_vpn_label">Secure VPN</string>
     <string name="tile_vpn_on">VPN: On</string>
     <string name="tile_secure">Secure</string>
     <string name="tile_vpn_off">VPN: Off</string>

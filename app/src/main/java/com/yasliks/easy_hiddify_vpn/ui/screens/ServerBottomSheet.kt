@@ -1,6 +1,5 @@
 package com.yasliks.easy_hiddify_vpn.ui.screens
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,25 +18,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yas.database.data.ServerDTO
-import com.yasliks.easy_hiddify_vpn.BuildConfig
 import com.yasliks.easy_hiddify_vpn.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +47,8 @@ fun ServerBottomSheet(
     onSave: (name: String, config: String) -> Unit,
 ) {
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -56,6 +57,14 @@ fun ServerBottomSheet(
     }
     var serverConfig by rememberSaveable(serverToEdit?.id) {
         mutableStateOf(serverToEdit?.config ?: "")
+    }
+    val pasteConfig: () -> Unit = remember(clipboard, scope, context, serverToEdit?.id) {
+        {
+            scope.launch {
+                val clipText = clipboard.getClipEntry()?.clipData?.getItemAt(0)?.coerceToText(context)
+                if (!clipText.isNullOrBlank()) serverConfig = clipText.toString()
+            }
+        }
     }
 
     val isSaveEnabled = serverName.isNotBlank() && serverConfig.isNotBlank()
@@ -103,12 +112,7 @@ fun ServerBottomSheet(
                         maxLines = 2,
                         trailingIcon = {
                             IconButton(
-                                onClick = {
-                                    val clipText = clipboardManager.getText()?.text
-                                    if (!clipText.isNullOrBlank()) {
-                                        serverConfig = clipText
-                                    }
-                                }
+                                onClick = pasteConfig,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ContentPaste,
@@ -135,12 +139,7 @@ fun ServerBottomSheet(
                     maxLines = 3,
                     trailingIcon = {
                         IconButton(
-                            onClick = {
-                                val clipText = clipboardManager.getText()?.text
-                                if (!clipText.isNullOrBlank()) {
-                                    serverConfig = clipText
-                                }
-                            }
+                            onClick = pasteConfig,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ContentPaste,
@@ -151,50 +150,9 @@ fun ServerBottomSheet(
                 )
             }
 
-            if (BuildConfig.DEBUG) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            @SuppressLint("LocalContextGetResourceValueCall")
-                            if (serverName.isBlank()) {
-                                serverName = context.getString(R.string.debug_vless_name)
-                            }
-                            serverConfig = BuildConfig.vless_serv
-                        }
-                    ) {
-                        Text(stringResource(R.string.debug_vless))
-                    }
-
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            @SuppressLint("LocalContextGetResourceValueCall")
-                            if (serverName.isBlank()) {
-                                serverName = context.getString(R.string.debug_ss_name)
-                            }
-                            serverConfig = BuildConfig.ss_serv
-                        }
-                    ) {
-                        Text(stringResource(R.string.debug_ss))
-                    }
-
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            @SuppressLint("LocalContextGetResourceValueCall")
-                            if (serverName.isBlank()) {
-                                serverName = context.getString(R.string.debug_trojan_name)
-                            }
-                            serverConfig = BuildConfig.trojan
-                        }
-                    ) {
-                        Text(stringResource(R.string.debug_trojan))
-                    }
-                }
+            DebugServerPresets { name, config ->
+                if (serverName.isBlank()) serverName = name
+                serverConfig = config
             }
 
             Button(

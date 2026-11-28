@@ -2,8 +2,6 @@ package com.yasliks.easy_hiddify_vpn.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -20,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -32,6 +32,7 @@ import com.yasliks.easy_hiddify_vpn.ui.components.base.ScreenWrapper
 import com.yasliks.easy_hiddify_vpn.ui.components.base.TopBar
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import com.yasliks.hiddify_library_lib.model.LogItem
+import kotlinx.coroutines.launch
 
 @Composable
 fun LogScreen(
@@ -39,6 +40,8 @@ fun LogScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val logs by hiddify.logger.logs.collectAsStateWithLifecycle()
 
     val configuration = LocalConfiguration.current
@@ -75,18 +78,21 @@ fun LogScreen(
     }
 
     @SuppressLint("LocalContextGetResourceValueCall")
-    val shareLogsAction = remember(context, hiddify) {
+    val shareLogsAction: () -> Unit = remember(context, hiddify, clipboard, scope) {
         {
             val currentLogs = hiddify.logger.logs.value
             if (currentLogs.isNotEmpty()) {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(
-                    ClipData.newPlainText(
-                        context.getString(R.string.logs_clip_label),
-                        currentLogs.joinToString("\n") { it.message }
+                scope.launch {
+                    clipboard.setClipEntry(
+                        clipEntry = ClipEntry(
+                            ClipData.newPlainText(
+                                context.getString(R.string.logs_clip_label),
+                                currentLogs.joinToString(separator = "\n") { it.message },
+                            )
+                        ),
                     )
-                )
-                Toast.makeText(context, context.getString(R.string.logs_copied), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.logs_copied), Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(context, context.getString(R.string.logs_empty), Toast.LENGTH_SHORT).show()
             }

@@ -1,19 +1,15 @@
 package com.yasliks.easy_hiddify_vpn.widget
 
-import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.VpnService
-import android.os.Build
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.yasliks.easy_hiddify_vpn.MainActivity
 import com.yasliks.easy_hiddify_vpn.R
 import com.yasliks.easy_hiddify_vpn.prefs.AppPrefs
 import com.yasliks.easy_hiddify_vpn.utils.StartVpnResult
 import com.yasliks.easy_hiddify_vpn.utils.VpnStarter
+import com.yasliks.easy_hiddify_vpn.utils.hasVpnStartPermissions
 import com.yasliks.hiddify_library_lib.EasyHiddify
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -29,16 +25,18 @@ class WidgetActionReceiver : BroadcastReceiver() {
     @Inject
     lateinit var vpnStarter: VpnStarter
 
+    @Inject
+    lateinit var hiddify: EasyHiddify
+
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != AppPrefs.RECEIVER_TOGGLE_VPN) return
 
-        val hiddify = EasyHiddify.instance
         if (hiddify.state.connected.value) {
             hiddify.stopVpn()
             return
         }
 
-        if (!hasRequiredPermissions(context)) {
+        if (!context.hasVpnStartPermissions()) {
             openMainActivity(context, AppPrefs.SHOW_PERMISSION_DIALOG)
             return
         }
@@ -61,18 +59,6 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 pendingResult.finish()
             }
         }
-    }
-
-    private fun hasRequiredPermissions(context: Context): Boolean {
-        val hasVpnPermission = VpnService.prepare(context) == null
-        val hasNotificationPermission =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.checkSelfPermission(
-                    /* context = */ context,
-                    /* permission = */ Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
-            } else true
-        return hasVpnPermission && hasNotificationPermission
     }
 
     private fun openMainActivity(context: Context, extra: String) {
