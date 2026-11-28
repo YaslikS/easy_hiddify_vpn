@@ -37,7 +37,7 @@ class QuickConnectActivity : ComponentActivity() {
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                Log.e(TAG, "Не удалось переключить VPN через ярлык", error)
+                Log.e(TAG, "Failed to toggle VPN from the launcher shortcut", error)
             } finally {
                 finish()
             }

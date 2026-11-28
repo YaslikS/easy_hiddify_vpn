@@ -2,7 +2,8 @@
 
 ## 1. Язык общения
 
-- Всегда общаться с пользователем, писать пояснения, отчёты и комментарии только на русском языке.
+- Communicate with the user and write reports in Russian.
+- Use English in project files, including code comments, log messages, and exception messages. Russian text belongs only in localized string resources.
 
 ## 2. Точечное чтение и проверка изменений
 
